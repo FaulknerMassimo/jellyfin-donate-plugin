@@ -111,7 +111,9 @@ Status panel will say so. Either drop the read-only mount or add the tag to your
 Three ways in, independent of the popup:
 
 - the **Donate** entry in the sidebar menu (on by default)
-- the floating **Donate** button in the corner (on by default)
+- the floating **Donate** button in the corner (on by default). It hides itself while
+  something is playing, and the popup waits rather than opening over a film — if the
+  user is still watching five minutes later it gives up for that session
 - `JellyfinDonate.open()` from the console, or any element with a `data-jf-donate`
   attribute / `<a href="#donate">`
 

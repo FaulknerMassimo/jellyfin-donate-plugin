@@ -15,6 +15,8 @@
 
     var STYLE_ID = 'jfd-styles';
     var POLL_MS = 1000;
+    var PROMPT_RETRY_MS = 30000;
+    var PROMPT_RETRY_WINDOW_MS = 5 * 60 * 1000;
 
     var config = null;
     var configUserId = null;
@@ -631,10 +633,45 @@
         });
     }
 
+    // ------------------------------------------------------------ playback state
+
+    /*
+     * True while the user is watching something. Nothing of ours should be on screen
+     * then - not the floating button, and certainly not a popup over a film. Checks
+     * several signals because the web client has changed shape between versions:
+     * an actually-playing <video>, the player route, and fullscreen.
+     */
+    function isPlaying() {
+        try {
+            if (document.fullscreenElement
+                || document.webkitFullscreenElement
+                || document.mozFullScreenElement) {
+                return true;
+            }
+
+            var hash = (window.location.hash || '').toLowerCase();
+            if (hash.indexOf('/video') !== -1) {
+                return true;
+            }
+
+            var videos = document.getElementsByTagName('video');
+            for (var i = 0; i < videos.length; i++) {
+                var video = videos[i];
+                if (!video.paused && !video.ended && video.readyState > 2) {
+                    return true;
+                }
+            }
+        } catch (err) {
+            log('playback check failed', err);
+        }
+        return false;
+    }
+
     // -------------------------------------------------------- persistent link
 
     function updatePersistentButton() {
-        var wanted = !!(config && config.Enabled && config.ShowPersistentButton && loggedInUserId());
+        var wanted = !!(config && config.Enabled && config.ShowPersistentButton
+            && loggedInUserId() && !isPlaying());
 
         if (!wanted) {
             if (persistentButton && persistentButton.parentNode) {
@@ -860,11 +897,24 @@
             }
 
             clearTimeout(promptTimer);
-            promptTimer = setTimeout(function () {
-                if (loggedInUserId() === userId && !overlay) {
-                    showPopup();
+            var giveUpAt = Date.now() + PROMPT_RETRY_WINDOW_MS;
+
+            function tryShow() {
+                if (loggedInUserId() !== userId || overlay) {
+                    return;
                 }
-            }, Math.max(0, (config.DelaySeconds || 0) * 1000));
+                if (isPlaying()) {
+                    // Wait for the film to finish rather than talking over it, but give
+                    // up after a while so nobody gets ambushed hours later.
+                    if (Date.now() < giveUpAt) {
+                        promptTimer = setTimeout(tryShow, PROMPT_RETRY_MS);
+                    }
+                    return;
+                }
+                showPopup();
+            }
+
+            promptTimer = setTimeout(tryShow, Math.max(0, (config.DelaySeconds || 0) * 1000));
         }, function (err) {
             log('config request failed', err);
         });
@@ -887,16 +937,21 @@
         if (!apiReady()) {
             return;
         }
+
         var userId = loggedInUserId();
-        if (userId === lastUserId) {
-            return;
+        if (userId !== lastUserId) {
+            lastUserId = userId;
+            if (userId) {
+                onUserSignedIn(userId);
+            } else {
+                onUserSignedOut();
+            }
         }
-        lastUserId = userId;
-        if (userId) {
-            onUserSignedIn(userId);
-        } else {
-            onUserSignedOut();
-        }
+
+        // Playback starts and stops without a sign-in change, so the floating button
+        // has to be re-evaluated on every tick. Both branches exit early once the
+        // button already matches the wanted state.
+        updatePersistentButton();
     }
 
     // ------------------------------------------------------------------ boot
@@ -959,6 +1014,19 @@
             target = target.parentNode;
         }
     }, true);
+
+    /*
+     * The one-second poll would leave the button on screen for up to a tick after
+     * playback starts, which is exactly when it is most annoying. React to the events
+     * directly as well; play/pause/ended are captured because they do not bubble.
+     */
+    window.addEventListener('hashchange', updatePersistentButton);
+    document.addEventListener('fullscreenchange', updatePersistentButton);
+    document.addEventListener('webkitfullscreenchange', updatePersistentButton);
+    document.addEventListener('play', updatePersistentButton, true);
+    document.addEventListener('playing', updatePersistentButton, true);
+    document.addEventListener('pause', updatePersistentButton, true);
+    document.addEventListener('ended', updatePersistentButton, true);
 
     watchDrawer();
     setInterval(poll, POLL_MS);
