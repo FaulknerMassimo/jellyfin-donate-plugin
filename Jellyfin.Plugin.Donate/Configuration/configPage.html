@@ -291,19 +291,19 @@
             var config = null;
 
             var presets = [
-                { Name: 'PayPal', Icon: 'PP', Color: '#0070ba', Url: 'https://paypal.me/yourname', Handle: '' },
-                { Name: 'Venmo', Icon: 'V', Color: '#3d95ce', Url: 'https://venmo.com/u/yourname', Handle: '@yourname' },
-                { Name: 'Cash App', Icon: '$', Color: '#00d54b', Url: 'https://cash.app/$yourname', Handle: '$yourname' },
+                { Name: 'PayPal', Icon: '', Color: '#002991', Url: 'https://paypal.me/yourname', Handle: '' },
+                { Name: 'Venmo', Icon: '', Color: '#008CFF', Url: 'https://venmo.com/u/yourname', Handle: '@yourname' },
+                { Name: 'Cash App', Icon: '', Color: '#00C244', Url: 'https://cash.app/$yourname', Handle: '$yourname' },
                 { Name: 'Interac e-Transfer', Icon: 'e', Color: '#ffb800', Url: '', Handle: 'you@example.com',
                   Instructions: 'Auto-deposit is on, so no security question is needed.' },
-                { Name: 'Ko-fi', Icon: 'K', Color: '#ff5e5b', Url: 'https://ko-fi.com/yourname', Handle: '' },
-                { Name: 'Buy Me a Coffee', Icon: 'BM', Color: '#ffdd00', Url: 'https://buymeacoffee.com/yourname', Handle: '' },
-                { Name: 'GitHub Sponsors', Icon: 'GH', Color: '#db61a2', Url: 'https://github.com/sponsors/yourname', Handle: '' },
-                { Name: 'Patreon', Icon: 'PA', Color: '#ff424d', Url: 'https://patreon.com/yourname', Handle: '' },
-                { Name: 'Revolut', Icon: 'R', Color: '#0075eb', Url: 'https://revolut.me/yourname', Handle: '' },
-                { Name: 'Wise', Icon: 'W', Color: '#9fe870', Url: '', Handle: 'you@example.com' },
+                { Name: 'Ko-fi', Icon: '', Color: '#FF6433', Url: 'https://ko-fi.com/yourname', Handle: '' },
+                { Name: 'Buy Me a Coffee', Icon: '', Color: '#FFDD00', Url: 'https://buymeacoffee.com/yourname', Handle: '' },
+                { Name: 'GitHub Sponsors', Icon: '', Color: '#EA4AAA', Url: 'https://github.com/sponsors/yourname', Handle: '' },
+                { Name: 'Patreon', Icon: '', Color: '#000000', Url: 'https://patreon.com/yourname', Handle: '' },
+                { Name: 'Revolut', Icon: '', Color: '#191C1F', Url: 'https://revolut.me/yourname', Handle: '' },
+                { Name: 'Wise', Icon: '', Color: '#9FE870', Url: '', Handle: 'you@example.com' },
                 { Name: 'Bank transfer', Icon: 'BT', Color: '#6b7280', Url: '', Handle: 'IBAN / account number' },
-                { Name: 'Bitcoin', Icon: 'BC', Color: '#f7931a', Url: '', Handle: 'bc1...' },
+                { Name: 'Bitcoin', Icon: '', Color: '#F7931A', Url: '', Handle: 'bc1...' },
                 { Name: 'Other', Icon: '*', Color: '#00a4dc', Url: '', Handle: '' }
             ];
 
@@ -423,8 +423,8 @@
                         'text', 'you@example.com'));
                     card.appendChild(field('Instructions (optional)', method.Instructions, 'Instructions',
                         'text', 'Send as "friends and family" if you can'));
-                    card.appendChild(field('Icon - 1-2 characters or an emoji', method.Icon, 'Icon',
-                        'text', 'PP'));
+                    card.appendChild(field('Icon - 1-2 characters or an emoji, ignored when the name matches a known brand',
+                        method.Icon, 'Icon', 'text', 'PP'));
                     card.appendChild(field('Accent colour', method.Color, 'Color', 'text', '#0070ba'));
                     card.appendChild(field('Image / QR code URL (optional)', method.ImageUrl, 'ImageUrl',
                         'text', 'https://example.com/qr.png'));

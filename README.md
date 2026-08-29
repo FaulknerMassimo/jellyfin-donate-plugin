@@ -140,9 +140,27 @@ Wise, bank transfer and Bitcoin. Each card has:
 | Link | Optional. `https://` is filled in if you leave it off, so `paypal.me/you` works. Omit entirely for methods with no URL, like Interac e-Transfer |
 | Handle / address | Optional. Shown with a **Copy** button — the e-mail, `@handle` or `$cashtag` |
 | Instructions | Optional free text, e.g. *"Auto-deposit is on, no security question"* |
-| Icon | 1–2 characters or an emoji |
+| Icon | 1–2 characters or an emoji. Ignored when the name matches a known brand |
 | Accent colour | Any CSS colour |
 | Image / QR URL | Optional. `https://` or a `data:image/...` URI — good for payment QR codes |
+
+### Brand logos
+
+Naming a method PayPal, Venmo, Cash App, Ko-fi, Buy Me a Coffee, GitHub Sponsors,
+Patreon, Revolut, Wise, Bitcoin, Stripe, Zelle or Liberapay draws that brand's real logo
+instead of a text badge — no setup, and it still matches on variations like
+`cash-app`, `BTC`, `TransferWise` or `PayPal (friends & family)`. Anything else falls
+back to the icon text, so Interac e-Transfer and the like still look deliberate.
+
+Leave the **Accent colour** blank and the card uses the brand's official colour. Text on
+the icon and button flips between black and white based on the background's luminance,
+and near-black brands (Patreon, Revolut) are lifted slightly on dark themes so the button
+doesn't disappear into the card.
+
+Logos are from [Simple Icons](https://simpleicons.org) (CC0-1.0) and are inlined in the
+script — nothing is fetched from a third party, and the donate page works offline. The
+trademarks belong to their owners; they're used only to label the payment method they
+point at.
 
 A method needs a usable link **or** a handle to be shown; one with neither is left out rather than drawn as an empty card. If no method is enabled, the popup
 stays hidden — the plugin won't nag people toward an empty page.
