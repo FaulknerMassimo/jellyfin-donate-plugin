@@ -149,8 +149,14 @@ Wise, bank transfer and Bitcoin. Each card has:
 Naming a method PayPal, Venmo, Cash App, Ko-fi, Buy Me a Coffee, GitHub Sponsors,
 Patreon, Revolut, Wise, Bitcoin, Stripe, Zelle or Liberapay draws that brand's real logo
 instead of a text badge — no setup, and it still matches on variations like
-`cash-app`, `BTC`, `TransferWise` or `PayPal (friends & family)`. Anything else falls
-back to the icon text, so Interac e-Transfer and the like still look deliberate.
+`cash-app`, `BTC`, `TransferWise` or `PayPal (friends & family)`. Anything else falls back to a
+glyph that matches what it is — an envelope for Interac e-Transfer and other email
+transfers, a bank for IBAN/SEPA/wire, a card for card payments, a banknote for cash —
+and finally to the icon text.
+
+Interac's own logo is deliberately not reproduced: it isn't in the Simple Icons set and
+its trademark carries usage rules, so an envelope is used instead, which is what an
+e-Transfer actually is.
 
 Leave the **Accent colour** blank and the card uses the brand's official colour. Text on
 the icon and button flips between black and white based on the background's luminance,
@@ -197,7 +203,8 @@ empty records.
 
 From the browser console, `JellyfinDonate.open()` opens the donate page any time, and
 anything with a `data-jf-donate` attribute (or `<a href="#donate">`) does the same when
-clicked. Set `window.JFD_DEBUG = true` for logging.
+clicked. Set `window.JFD_DEBUG = true` for logging, and `JellyfinDonate.dumpNav()` prints
+the sidebar markup — useful if the menu entry doesn't match your client's styling.
 
 Per-user state lives in the plugin configuration XML. That's fine for a normal family/
 friends server; it isn't built for tens of thousands of users.

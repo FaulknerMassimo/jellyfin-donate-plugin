@@ -236,6 +236,40 @@
     };
 
     /*
+     * Methods with no brand mark available get a glyph that says what they are, rather
+     * than a text badge. Interac e-Transfer is literally an email money transfer, so an
+     * envelope reads correctly - and drawing its trademark would be wrong anyway.
+     */
+    var GENERIC_ICONS = {
+        envelope: {
+            color: '#f0a202',
+            path: 'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6'
+                + 'c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'
+        },
+        bank: {
+            color: '#6b7280',
+            path: 'M4 10h3v7H4v-7zm6.5 0h3v7h-3v-7zM2 19h20v3H2v-3zm15-9h3v7h-3v-7zM12 1L2 6v2h20V6L12 1z'
+        },
+        card: {
+            color: '#4b5563',
+            path: 'M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6'
+                + 'c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z'
+        },
+        cash: {
+            color: '#2f855a',
+            path: 'M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zM2 6h20v12H2V6zm2 2v8h16V8H4z'
+        }
+    };
+
+    // Checked in order; the first pattern that matches the method name wins.
+    var GENERIC_MATCHERS = [
+        { pattern: /interac|etransfer|emailtransfer|virement/, icon: 'envelope' },
+        { pattern: /bank|iban|swift|sepa|wire|directdeposit|eft/, icon: 'bank' },
+        { pattern: /card|visa|mastercard|amex|credit|debit/, icon: 'card' },
+        { pattern: /cash|money|envelope|inperson/, icon: 'cash' }
+    ];
+
+    /*
      * Maps a method name onto a brand mark. "Cash App", "cash-app" and "cashapp" all
      * land on the same icon, and a few common aliases are spelled out.
      */
@@ -268,6 +302,12 @@
         for (var slug in BRAND_ICONS) {
             if (Object.prototype.hasOwnProperty.call(BRAND_ICONS, slug) && key.indexOf(slug) === 0) {
                 return BRAND_ICONS[slug];
+            }
+        }
+
+        for (var i = 0; i < GENERIC_MATCHERS.length; i++) {
+            if (GENERIC_MATCHERS[i].pattern.test(key)) {
+                return GENERIC_ICONS[GENERIC_MATCHERS[i].icon];
             }
         }
         return null;
@@ -432,6 +472,9 @@
             '.jfd-thanks .jfd-body{color:var(--jfd-fg);}',
             '.jfd-empty{margin-top:20px;padding:16px;border:1px dashed var(--jfd-line);border-radius:10px;',
             'color:var(--jfd-muted);font-size:.9em;}',
+            '.jfd-menu-item .jfd-icon-slot::before,.jfd-menu-item .jfd-icon-slot::after',
+            '{content:none !important;background-image:none !important;}',
+            '.jfd-menu-item .jfd-icon-slot{background-image:none !important;}',
             '.jfd-fab{position:fixed;right:18px;bottom:18px;z-index:99998;padding:10px 16px;border:0;',
             'border-radius:999px;background:#00a4dc;color:#fff;font-weight:600;font-size:.9em;cursor:pointer;',
             'font-family:inherit;box-shadow:0 6px 20px rgba(0,0,0,.35);}',
@@ -884,17 +927,80 @@
         + 'c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5'
         + 'c0 3.78-3.4 6.86-8.55 11.54L12 21.35z';
 
-    function setDonateIcon(svg) {
+    function heartSvg(size) {
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('width', size || '24');
+        svg.setAttribute('height', size || '24');
+        svg.setAttribute('fill', 'currentColor');
+        svg.setAttribute('aria-hidden', 'true');
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', HEART_PATH);
+        svg.appendChild(path);
+        return svg;
+    }
+
+    function isSvgElement(node) {
+        return node && node.tagName && String(node.tagName).toLowerCase() === 'svg';
+    }
+
+    /*
+     * Replaces whatever the cloned nav link uses for its icon. A client can paint one
+     * in at least four ways - an <svg>, an <img>, a font ligature as text, or purely in
+     * CSS via a background image or a ::before on a class - and cloning copies all of
+     * them. Clearing the slot and injecting our own SVG covers the first three;
+     * neutralising background/mask inline plus a ::before rule covers the last.
+     */
+    function applyDonateIcon(item) {
         try {
-            while (svg.firstChild) {
-                svg.removeChild(svg.firstChild);
+            var slot = null;
+            var nodes = item.querySelectorAll('*');
+
+            for (var i = 0; i < nodes.length && !slot; i++) {
+                var cls = nodes[i].className;
+                if (typeof cls === 'string' && /icon|symbol/i.test(cls)) {
+                    slot = nodes[i];
+                }
             }
-            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', HEART_PATH);
-            svg.appendChild(path);
-            if (!svg.getAttribute('viewBox')) {
-                svg.setAttribute('viewBox', '0 0 24 24');
+
+            if (!slot) {
+                var graphic = item.querySelector('svg, img');
+                slot = graphic ? (isSvgElement(graphic) ? graphic : graphic.parentNode) : null;
             }
+
+            if (!slot || slot === item) {
+                slot = document.createElement('span');
+                slot.style.display = 'inline-flex';
+                slot.style.alignItems = 'center';
+                slot.style.marginRight = '.6em';
+                item.insertBefore(slot, item.firstChild);
+            }
+
+            if (isSvgElement(slot)) {
+                while (slot.firstChild) {
+                    slot.removeChild(slot.firstChild);
+                }
+                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', HEART_PATH);
+                slot.appendChild(path);
+                if (!slot.getAttribute('viewBox')) {
+                    slot.setAttribute('viewBox', '0 0 24 24');
+                }
+                return;
+            }
+
+            if (slot.classList) {
+                slot.classList.add('jfd-icon-slot');
+            }
+            slot.style.backgroundImage = 'none';
+            slot.style.webkitMaskImage = 'none';
+            slot.style.maskImage = 'none';
+            slot.style.fontSize = slot.style.fontSize || 'inherit';
+
+            while (slot.firstChild) {
+                slot.removeChild(slot.firstChild);
+            }
+            slot.appendChild(heartSvg('1em'));
         } catch (err) {
             log('could not swap the sidebar icon', err);
         }
@@ -996,9 +1102,6 @@
 
             var label = config.PersistentButtonText || 'Donate';
             if (leaves.length >= 2) {
-                if (/material-icons|icon/i.test(leaves[0].className || '')) {
-                    leaves[0].textContent = 'volunteer_activism';
-                }
                 leaves[leaves.length - 1].textContent = label;
             } else if (leaves.length === 1) {
                 leaves[0].textContent = label;
@@ -1006,12 +1109,8 @@
                 item.textContent = label;
             }
 
-            // SVG-icon clients (10.11 uses MUI) keep the icon of the link we cloned,
-            // so redraw it as a heart.
-            var icons = item.querySelectorAll('svg');
-            for (var v = 0; v < icons.length; v++) {
-                setDonateIcon(icons[v]);
-            }
+            injectStyles();
+            applyDonateIcon(item);
 
             container.appendChild(item);
         } catch (err) {
@@ -1165,6 +1264,23 @@
         reload: function () {
             lastUserId = undefined;
             poll();
+        },
+
+        /** Prints the sidebar markup, so the entry can be matched to the real client. */
+        dumpNav: function () {
+            var template = findNavTemplate();
+            var mine = document.querySelector('.jfd-menu-item');
+            var report = {
+                templateFound: !!template,
+                template: template ? template.outerHTML : null,
+                templateParent: template && template.parentNode
+                    ? template.parentNode.outerHTML.substring(0, 1200) : null,
+                injected: mine ? mine.outerHTML : null
+            };
+            if (window.console) {
+                console.log('[Donations] nav report\n' + JSON.stringify(report, null, 2));
+            }
+            return report;
         }
     };
 

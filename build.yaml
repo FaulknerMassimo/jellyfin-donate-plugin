@@ -1,7 +1,7 @@
 ---
 name: "Donations"
 guid: "b1f0a5c2-3d7e-4a91-9c5f-2e8d4a6b7c30"
-version: "1.2.0.0"
+version: "1.2.1.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 owner: "you"
@@ -15,6 +15,10 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.Donate.dll"
 changelog: |
+  ## 1.2.1.0
+  Replace the sidebar icon however the client paints it, and give methods with no
+  brand mark a meaningful glyph (Interac e-Transfer gets an envelope).
+
   ## 1.2.0.0
   Real brand logos on the payment cards (PayPal, Venmo, Cash App and ten more),
   matched from the method name, with automatic contrast handling.
