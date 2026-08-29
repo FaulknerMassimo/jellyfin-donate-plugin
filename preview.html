@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Donations plugin - preview</title>
+<style>
+    body { margin:0; min-height:100vh; background:#101014; color:#e8e8ec;
+           font-family: system-ui, "Segoe UI", Roboto, sans-serif; padding:40px; }
+    h1 { font-size:1.3rem; margin:0 0 6px; }
+    p.sub { color:#9aa0ab; margin:0 0 24px; font-size:.92rem; }
+    .bar { display:flex; gap:10px; flex-wrap:wrap; }
+    button { padding:10px 16px; border-radius:8px; border:1px solid #33363d;
+             background:#1c1c21; color:#e8e8ec; font-size:.9rem; cursor:pointer; font-family:inherit; }
+    button:hover { background:#26262d; }
+    .fake { margin-top:36px; padding:24px; border:1px dashed #33363d; border-radius:12px; color:#6d7480; }
+</style>
+</head>
+<body>
+    <h1>Donations plugin &mdash; preview</h1>
+    <p class="sub">
+        A mock Jellyfin web client. Everything below runs the real
+        <code>Web/donate.js</code> against a fake ApiClient, so you can see exactly what your
+        users will get before installing anything.
+    </p>
+
+    <div class="bar">
+        <button id="popup">Simulate logging in (popup)</button>
+        <button id="page">Open the donate page</button>
+        <button id="theme">Toggle light / dark</button>
+    </div>
+
+    <div class="fake">This box stands in for the Jellyfin home screen.</div>
+
+<script>
+// ---- a fake Jellyfin ApiClient, just enough for donate.js -------------------
+var mockConfig = {
+    Enabled: true,
+    ShouldPrompt: true,
+    ShowDontRemindOption: true,
+    HasDonated: false,
+    DelaySeconds: 0,
+    ReminderIntervalDays: 0,
+    PopupTitle: "Enjoying the server?",
+    PopupMessage: "This Jellyfin server is paid for and maintained out of pocket.\n\nIf you get some value out of it, a small donation goes a long way toward hardware, storage and the electricity bill. Totally optional – nothing is locked behind it.",
+    DonateButtonText: "Yes, I'd like to donate",
+    CloseButtonText: "Close",
+    DontRemindText: "Don't remind me again",
+    DonatePageTitle: "Support the server",
+    DonatePageMessage: "Pick whichever method is easiest for you. Any amount is appreciated.",
+    ThankYouMessage: "Thank you so much! Your support genuinely keeps this server running. It means a lot that you took the time.",
+    DonatedButtonText: "I've made a donation",
+    ExternalDonatePageUrl: "",
+    ShowPersistentButton: false,
+    PersistentButtonText: "Donate",
+    Appearance: "dark",
+    AccentColor: "#00a4dc",
+    AllowHtml: false,
+    Methods: [
+        { Id: "1", Name: "PayPal", Handle: "you@example.com", Url: "https://paypal.me/yourname",
+          Instructions: "", Icon: "PP", ImageUrl: "", Color: "#0070ba" },
+        { Id: "2", Name: "Venmo", Handle: "@yourname", Url: "https://venmo.com/u/yourname",
+          Instructions: "", Icon: "V", ImageUrl: "", Color: "#3d95ce" },
+        { Id: "3", Name: "Cash App", Handle: "$yourname", Url: "https://cash.app/$yourname",
+          Instructions: "", Icon: "$", ImageUrl: "", Color: "#00d54b" },
+        { Id: "4", Name: "Interac e-Transfer", Handle: "you@example.com", Url: "",
+          Instructions: "Auto-deposit is on, so no security question is needed.",
+          Icon: "e", ImageUrl: "", Color: "#ffb800" }
+    ]
+};
+
+window.ApiClient = {
+    getUrl: function (path) { return "/" + path; },
+    isLoggedIn: function () { return true; },
+    getCurrentUserId: function () { return "preview-user"; },
+    ajax: function (options) {
+        console.log("[mock ApiClient]", options.type, options.url, options.data || "");
+        if (options.url.indexOf("Donate/Config") !== -1) {
+            return Promise.resolve(JSON.parse(JSON.stringify(mockConfig)));
+        }
+        return Promise.resolve({ Ok: true });
+    }
+};
+
+// Deep links, applied before donate.js loads so its first config fetch sees them:
+//   ?page    open the donate page instead of the popup
+//   ?thanks  open the donate page with the thank-you message already showing
+//   ?light   render in the light colour scheme
+var previewOpts = location.search;
+if (previewOpts.indexOf('light') !== -1) {
+    mockConfig.Appearance = 'light';
+}
+if (previewOpts.indexOf('thanks') !== -1) {
+    mockConfig.HasDonated = true;
+}
+if (previewOpts.indexOf('page') !== -1 || previewOpts.indexOf('thanks') !== -1) {
+    mockConfig.ShouldPrompt = false;
+}
+
+// donate.js only prompts once per browser session; the preview should always show it.
+try { sessionStorage.clear(); localStorage.clear(); } catch (e) {}
+</script>
+
+<script src="Jellyfin.Plugin.Donate/Web/donate.js"></script>
+
+<script>
+document.getElementById('popup').addEventListener('click', function () {
+    try { sessionStorage.clear(); } catch (e) {}
+    JellyfinDonate.close();
+    JellyfinDonate.reload();
+});
+document.getElementById('page').addEventListener('click', function () {
+    JellyfinDonate.open();
+});
+if (mockConfig.Appearance === 'light') {
+    document.body.style.background = '#f4f5f7';
+    document.body.style.color = '#16181d';
+}
+if (mockConfig.ShouldPrompt === false) {
+    JellyfinDonate.open();
+}
+
+document.getElementById('theme').addEventListener('click', function () {
+    mockConfig.Appearance = mockConfig.Appearance === 'dark' ? 'light' : 'dark';
+    document.body.style.background = mockConfig.Appearance === 'dark' ? '#101014' : '#f4f5f7';
+    document.body.style.color = mockConfig.Appearance === 'dark' ? '#e8e8ec' : '#16181d';
+    JellyfinDonate.close();
+    JellyfinDonate.open();
+});
+</script>
+</body>
+</html>

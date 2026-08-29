@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Donations</title>
+</head>
+<body>
+<div id="donateConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-checkbox,emby-select,emby-textarea,emby-collapse">
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="donateConfigForm">
+
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Donations</h2>
+                    <p class="fieldDescription">
+                        Asks your users at login whether they would like to chip in, and gives them a donate
+                        page with the payment methods you set up below.
+                    </p>
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="Enabled" />
+                        <span>Enable the donation plugin</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">
+                        Turn this off to hide the popup and the donate page from everyone.
+                    </div>
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="AutoInjectClientScript" />
+                        <span>Add the popup script to the web client automatically</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">
+                        Patches a &lt;script&gt; tag into the web client's index.html. Leave this on unless you
+                        add the tag yourself. Users need a hard refresh (Ctrl+Shift+R) after a change.
+                    </div>
+                </div>
+
+                <!-- ------------------------------------------------ popup -->
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Login popup</h2>
+                </div>
+
+                <div class="checkboxContainer">
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="ShowPopup" />
+                        <span>Show the popup after users log in</span>
+                    </label>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="text" id="PopupTitle" label="Popup title" />
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel" for="PopupMessage">Popup message</label>
+                    <textarea is="emby-textarea" id="PopupMessage" rows="4" class="emby-input"></textarea>
+                    <div class="fieldDescription">Blank lines start a new paragraph.</div>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="text" id="DonateButtonText" label="&quot;Yes&quot; button text" />
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="text" id="CloseButtonText" label="Close button text" />
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="ShowDontRemindOption" />
+                        <span>Offer a &quot;Don't remind me again&quot; checkbox</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">
+                        The choice is stored on the server per user, so it follows them to every device.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="text" id="DontRemindText" label="Checkbox text" />
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="number" id="DelaySeconds" min="0" max="600"
+                           label="Delay before the popup appears (seconds)" />
+                    <div class="fieldDescription">
+                        A few seconds is kinder than an instant popup - let the home screen load first.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="number" id="ReminderIntervalDays" min="0" max="3650"
+                           label="Minimum days between reminders" />
+                    <div class="fieldDescription">
+                        0 shows the popup once per browser session, i.e. roughly every time someone opens
+                        Jellyfin. Set 30 to ask at most monthly.
+                    </div>
+                </div>
+
+                <div class="checkboxContainer">
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="ShowToAdministrators" />
+                        <span>Also show the popup to administrators</span>
+                    </label>
+                </div>
+
+                <div class="checkboxContainer">
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="StopPromptingAfterDonation" />
+                        <span>Stop reminding a user once they say they have donated</span>
+                    </label>
+                </div>
+
+                <!-- ------------------------------------------- donate page -->
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Donate page</h2>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="text" id="DonatePageTitle" label="Page title" />
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel" for="DonatePageMessage">Page message</label>
+                    <textarea is="emby-textarea" id="DonatePageMessage" rows="3" class="emby-input"></textarea>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel" for="ThankYouMessage">Thank-you message</label>
+                    <textarea is="emby-textarea" id="ThankYouMessage" rows="3" class="emby-input"></textarea>
+                    <div class="fieldDescription">
+                        Shown once the user opens a payment method, copies a handle, or confirms they donated.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="text" id="DonatedButtonText"
+                           label="&quot;I've donated&quot; button text" />
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="url" id="ExternalDonatePageUrl"
+                           label="External donate page URL (optional)" />
+                    <div class="fieldDescription">
+                        Set this to send users to your own page (Ko-fi, GitHub Sponsors, ...) instead of the
+                        built-in donate page. Leave blank to use the methods below.
+                    </div>
+                </div>
+
+                <!-- ---------------------------------------------- methods -->
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Payment methods</h2>
+                    <p class="fieldDescription">
+                        Add one card per way of paying you. A link, a copyable handle, or both - Interac
+                        e-Transfer for example only needs an e-mail address.
+                    </p>
+                </div>
+
+                <div id="methodsList"></div>
+
+                <div class="inputContainer" style="display:flex;gap:.6em;flex-wrap:wrap;align-items:flex-end;">
+                    <select is="emby-select" id="methodPreset" label="Add a method"
+                            style="min-width:14em;"></select>
+                    <button is="emby-button" type="button" id="addMethod" class="raised">
+                        <span>Add</span>
+                    </button>
+                </div>
+
+                <!-- ------------------------------------------- appearance -->
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Appearance</h2>
+                </div>
+
+                <div class="selectContainer">
+                    <select is="emby-select" id="Appearance" label="Colour scheme">
+                        <option value="auto">Match the user's system setting</option>
+                        <option value="dark">Always dark</option>
+                        <option value="light">Always light</option>
+                    </select>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="text" id="AccentColor" label="Accent colour"
+                           placeholder="#00a4dc" />
+                    <div class="fieldDescription">Any CSS colour. Jellyfin's blue is #00a4dc.</div>
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="ShowPersistentButton" />
+                        <span>Show a floating &quot;Donate&quot; button in the corner</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">
+                        Keeps the donate page reachable for people who dismissed the popup.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="text" id="PersistentButtonText" label="Floating button text" />
+                </div>
+
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="AllowHtmlInMessages" />
+                        <span>Allow HTML in the messages above</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">
+                        Off by default - messages are shown as plain text. Only turn this on if you want links
+                        or formatting, and remember the markup is rendered as-is in every user's browser.
+                    </div>
+                </div>
+
+                <!-- -------------------------------------------- user data -->
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">User reminders</h2>
+                    <p class="fieldDescription" id="optOutSummary"></p>
+                    <button is="emby-button" type="button" id="resetStates" class="raised">
+                        <span>Reset all opt-outs and reminder history</span>
+                    </button>
+                </div>
+
+                <br />
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block">
+                        <span>Save</span>
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = 'b1f0a5c2-3d7e-4a91-9c5f-2e8d4a6b7c30';
+            var page = document.querySelector('#donateConfigPage');
+            var config = null;
+
+            var presets = [
+                { Name: 'PayPal', Icon: 'PP', Color: '#0070ba', Url: 'https://paypal.me/yourname', Handle: '' },
+                { Name: 'Venmo', Icon: 'V', Color: '#3d95ce', Url: 'https://venmo.com/u/yourname', Handle: '@yourname' },
+                { Name: 'Cash App', Icon: '$', Color: '#00d54b', Url: 'https://cash.app/$yourname', Handle: '$yourname' },
+                { Name: 'Interac e-Transfer', Icon: 'e', Color: '#ffb800', Url: '', Handle: 'you@example.com',
+                  Instructions: 'Auto-deposit is on, so no security question is needed.' },
+                { Name: 'Ko-fi', Icon: 'K', Color: '#ff5e5b', Url: 'https://ko-fi.com/yourname', Handle: '' },
+                { Name: 'Buy Me a Coffee', Icon: 'BM', Color: '#ffdd00', Url: 'https://buymeacoffee.com/yourname', Handle: '' },
+                { Name: 'GitHub Sponsors', Icon: 'GH', Color: '#db61a2', Url: 'https://github.com/sponsors/yourname', Handle: '' },
+                { Name: 'Patreon', Icon: 'PA', Color: '#ff424d', Url: 'https://patreon.com/yourname', Handle: '' },
+                { Name: 'Revolut', Icon: 'R', Color: '#0075eb', Url: 'https://revolut.me/yourname', Handle: '' },
+                { Name: 'Wise', Icon: 'W', Color: '#9fe870', Url: '', Handle: 'you@example.com' },
+                { Name: 'Bank transfer', Icon: 'BT', Color: '#6b7280', Url: '', Handle: 'IBAN / account number' },
+                { Name: 'Bitcoin', Icon: 'BC', Color: '#f7931a', Url: '', Handle: 'bc1...' },
+                { Name: 'Other', Icon: '*', Color: '#00a4dc', Url: '', Handle: '' }
+            ];
+
+            function uid() {
+                return 'm' + Date.now().toString(16) + Math.floor(Math.random() * 65536).toString(16);
+            }
+
+            function fillPresets() {
+                var select = page.querySelector('#methodPreset');
+                select.innerHTML = '';
+                for (var i = 0; i < presets.length; i++) {
+                    var option = document.createElement('option');
+                    option.value = String(i);
+                    option.textContent = presets[i].Name;
+                    select.appendChild(option);
+                }
+            }
+
+            function field(labelText, value, key, type, placeholder) {
+                var wrap = document.createElement('div');
+                wrap.className = 'inputContainer';
+                wrap.style.marginBottom = '.6em';
+
+                var label = document.createElement('label');
+                label.className = 'inputLabel';
+                label.textContent = labelText;
+                wrap.appendChild(label);
+
+                var input = document.createElement('input');
+                input.type = type || 'text';
+                input.className = 'emby-input';
+                input.value = value || '';
+                input.setAttribute('data-key', key);
+                if (placeholder) {
+                    input.placeholder = placeholder;
+                }
+                wrap.appendChild(input);
+                return wrap;
+            }
+
+            function renderMethods() {
+                var list = page.querySelector('#methodsList');
+                list.innerHTML = '';
+
+                if (!config.Methods || !config.Methods.length) {
+                    var none = document.createElement('p');
+                    none.className = 'fieldDescription';
+                    none.textContent = 'No payment methods yet. Pick one below and press Add.';
+                    list.appendChild(none);
+                    return;
+                }
+
+                config.Methods.forEach(function (method, index) {
+                    var card = document.createElement('div');
+                    card.className = 'verticalSection';
+                    card.style.cssText = 'border:1px solid rgba(128,128,128,.35);border-radius:8px;'
+                        + 'padding:1em;margin-bottom:1em;';
+                    card.setAttribute('data-index', String(index));
+
+                    var head = document.createElement('div');
+                    head.style.cssText = 'display:flex;align-items:center;gap:.6em;flex-wrap:wrap;'
+                        + 'justify-content:space-between;margin-bottom:.6em;';
+
+                    var heading = document.createElement('h3');
+                    heading.style.margin = '0';
+                    heading.textContent = method.Name || 'Untitled method';
+                    head.appendChild(heading);
+
+                    var buttons = document.createElement('div');
+                    buttons.style.cssText = 'display:flex;gap:.4em;';
+                    [['up', '↑', index > 0],
+                     ['down', '↓', index < config.Methods.length - 1],
+                     ['remove', 'Remove', true]].forEach(function (spec) {
+                        if (!spec[2]) {
+                            return;
+                        }
+                        var button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'raised emby-button';
+                        button.style.padding = '.3em .8em';
+                        button.textContent = spec[1];
+                        button.addEventListener('click', function () {
+                            if (spec[0] === 'remove') {
+                                config.Methods.splice(index, 1);
+                            } else {
+                                var to = spec[0] === 'up' ? index - 1 : index + 1;
+                                var moved = config.Methods.splice(index, 1)[0];
+                                config.Methods.splice(to, 0, moved);
+                            }
+                            renderMethods();
+                        });
+                        buttons.appendChild(button);
+                    });
+                    head.appendChild(buttons);
+                    card.appendChild(head);
+
+                    var enabledWrap = document.createElement('div');
+                    enabledWrap.className = 'checkboxContainer';
+                    var enabledLabel = document.createElement('label');
+                    enabledLabel.className = 'emby-checkbox-label';
+                    var enabled = document.createElement('input');
+                    enabled.type = 'checkbox';
+                    enabled.style.cssText = 'width:1.2em;height:1.2em;margin-right:.5em;vertical-align:middle;';
+                    enabled.checked = method.Enabled !== false;
+                    enabled.setAttribute('data-key', 'Enabled');
+                    enabledLabel.appendChild(enabled);
+                    var enabledText = document.createElement('span');
+                    enabledText.textContent = 'Show this method to users';
+                    enabledLabel.appendChild(enabledText);
+                    enabledWrap.appendChild(enabledLabel);
+                    card.appendChild(enabledWrap);
+
+                    card.appendChild(field('Name', method.Name, 'Name', 'text', 'PayPal'));
+                    card.appendChild(field('Link (optional)', method.Url, 'Url', 'text',
+                        'https://paypal.me/yourname'));
+                    card.appendChild(field('Handle / address to copy (optional)', method.Handle, 'Handle',
+                        'text', 'you@example.com'));
+                    card.appendChild(field('Instructions (optional)', method.Instructions, 'Instructions',
+                        'text', 'Send as "friends and family" if you can'));
+                    card.appendChild(field('Icon - 1-2 characters or an emoji', method.Icon, 'Icon',
+                        'text', 'PP'));
+                    card.appendChild(field('Accent colour', method.Color, 'Color', 'text', '#0070ba'));
+                    card.appendChild(field('Image / QR code URL (optional)', method.ImageUrl, 'ImageUrl',
+                        'text', 'https://example.com/qr.png'));
+
+                    heading.textContent = method.Name || 'Untitled method';
+                    var nameInput = card.querySelector('[data-key="Name"]');
+                    nameInput.addEventListener('input', function () {
+                        heading.textContent = nameInput.value || 'Untitled method';
+                    });
+
+                    list.appendChild(card);
+                });
+            }
+
+            function collectMethods() {
+                var cards = page.querySelectorAll('#methodsList [data-index]');
+                var result = [];
+                for (var i = 0; i < cards.length; i++) {
+                    var card = cards[i];
+                    var existing = config.Methods[parseInt(card.getAttribute('data-index'), 10)] || {};
+                    var method = {
+                        Id: existing.Id || uid(),
+                        Enabled: card.querySelector('[data-key="Enabled"]').checked
+                    };
+                    var inputs = card.querySelectorAll('input[data-key]');
+                    for (var j = 0; j < inputs.length; j++) {
+                        var key = inputs[j].getAttribute('data-key');
+                        if (key !== 'Enabled') {
+                            method[key] = inputs[j].value.trim();
+                        }
+                    }
+                    result.push(method);
+                }
+                return result;
+            }
+
+            function updateOptOutSummary() {
+                var states = config.UserStates || [];
+                var optedOut = 0;
+                var donated = 0;
+                for (var i = 0; i < states.length; i++) {
+                    if (states[i].OptedOut) {
+                        optedOut++;
+                    }
+                    if (states[i].DonatedUtc) {
+                        donated++;
+                    }
+                }
+                page.querySelector('#optOutSummary').textContent =
+                    states.length + ' user(s) tracked - ' + optedOut + ' opted out of reminders, '
+                    + donated + ' marked as having donated.';
+            }
+
+            function setChecked(id, value) {
+                page.querySelector('#' + id).checked = !!value;
+            }
+
+            function setValue(id, value) {
+                page.querySelector('#' + id).value = value === null || value === undefined ? '' : value;
+            }
+
+            function load() {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (result) {
+                    config = result;
+                    config.Methods = config.Methods || [];
+                    config.UserStates = config.UserStates || [];
+
+                    setChecked('Enabled', config.Enabled);
+                    setChecked('AutoInjectClientScript', config.AutoInjectClientScript);
+                    setChecked('ShowPopup', config.ShowPopup);
+                    setChecked('ShowDontRemindOption', config.ShowDontRemindOption);
+                    setChecked('ShowToAdministrators', config.ShowToAdministrators);
+                    setChecked('StopPromptingAfterDonation', config.StopPromptingAfterDonation);
+                    setChecked('ShowPersistentButton', config.ShowPersistentButton);
+                    setChecked('AllowHtmlInMessages', config.AllowHtmlInMessages);
+
+                    setValue('PopupTitle', config.PopupTitle);
+                    setValue('PopupMessage', config.PopupMessage);
+                    setValue('DonateButtonText', config.DonateButtonText);
+                    setValue('CloseButtonText', config.CloseButtonText);
+                    setValue('DontRemindText', config.DontRemindText);
+                    setValue('DelaySeconds', config.DelaySeconds);
+                    setValue('ReminderIntervalDays', config.ReminderIntervalDays);
+                    setValue('DonatePageTitle', config.DonatePageTitle);
+                    setValue('DonatePageMessage', config.DonatePageMessage);
+                    setValue('ThankYouMessage', config.ThankYouMessage);
+                    setValue('DonatedButtonText', config.DonatedButtonText);
+                    setValue('ExternalDonatePageUrl', config.ExternalDonatePageUrl);
+                    setValue('Appearance', config.Appearance || 'auto');
+                    setValue('AccentColor', config.AccentColor);
+                    setValue('PersistentButtonText', config.PersistentButtonText);
+
+                    renderMethods();
+                    updateOptOutSummary();
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            function save() {
+                Dashboard.showLoadingMsg();
+
+                config.Methods = collectMethods();
+
+                config.Enabled = page.querySelector('#Enabled').checked;
+                config.AutoInjectClientScript = page.querySelector('#AutoInjectClientScript').checked;
+                config.ShowPopup = page.querySelector('#ShowPopup').checked;
+                config.ShowDontRemindOption = page.querySelector('#ShowDontRemindOption').checked;
+                config.ShowToAdministrators = page.querySelector('#ShowToAdministrators').checked;
+                config.StopPromptingAfterDonation = page.querySelector('#StopPromptingAfterDonation').checked;
+                config.ShowPersistentButton = page.querySelector('#ShowPersistentButton').checked;
+                config.AllowHtmlInMessages = page.querySelector('#AllowHtmlInMessages').checked;
+
+                config.PopupTitle = page.querySelector('#PopupTitle').value;
+                config.PopupMessage = page.querySelector('#PopupMessage').value;
+                config.DonateButtonText = page.querySelector('#DonateButtonText').value;
+                config.CloseButtonText = page.querySelector('#CloseButtonText').value;
+                config.DontRemindText = page.querySelector('#DontRemindText').value;
+                config.DelaySeconds = parseInt(page.querySelector('#DelaySeconds').value, 10) || 0;
+                config.ReminderIntervalDays = parseInt(page.querySelector('#ReminderIntervalDays').value, 10) || 0;
+                config.DonatePageTitle = page.querySelector('#DonatePageTitle').value;
+                config.DonatePageMessage = page.querySelector('#DonatePageMessage').value;
+                config.ThankYouMessage = page.querySelector('#ThankYouMessage').value;
+                config.DonatedButtonText = page.querySelector('#DonatedButtonText').value;
+                config.ExternalDonatePageUrl = page.querySelector('#ExternalDonatePageUrl').value.trim();
+                config.Appearance = page.querySelector('#Appearance').value;
+                config.AccentColor = page.querySelector('#AccentColor').value.trim();
+                config.PersistentButtonText = page.querySelector('#PersistentButtonText').value;
+
+                ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                    Dashboard.processPluginConfigurationUpdateResult(result);
+                    renderMethods();
+                    updateOptOutSummary();
+                });
+            }
+
+            page.addEventListener('pageshow', function () {
+                fillPresets();
+                load();
+            });
+
+            page.querySelector('#addMethod').addEventListener('click', function () {
+                config.Methods = collectMethods();
+                var preset = presets[parseInt(page.querySelector('#methodPreset').value, 10) || 0];
+                config.Methods.push({
+                    Id: uid(),
+                    Name: preset.Name === 'Other' ? '' : preset.Name,
+                    Icon: preset.Icon,
+                    Color: preset.Color,
+                    Url: preset.Url || '',
+                    Handle: preset.Handle || '',
+                    Instructions: preset.Instructions || '',
+                    ImageUrl: '',
+                    Enabled: true
+                });
+                renderMethods();
+            });
+
+            page.querySelector('#resetStates').addEventListener('click', function () {
+                var message = 'Clear every user opt-out and reminder timestamp? Users who ticked '
+                    + '"Don\'t remind me again" will start seeing the popup again.';
+                var proceed = window.confirm ? window.confirm(message) : true;
+                if (!proceed) {
+                    return;
+                }
+                config.UserStates = [];
+                save();
+            });
+
+            page.querySelector('#donateConfigForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                save();
+                return false;
+            });
+        })();
+    </script>
+</div>
+</body>
+</html>
