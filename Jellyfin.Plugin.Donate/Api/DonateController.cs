@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Security.Claims;
 using Jellyfin.Plugin.Donate.Services;
 using MediaBrowser.Controller;
-using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -22,17 +21,17 @@ public class DonateController : ControllerBase
 {
     private const string JellyfinUserIdClaim = "Jellyfin-UserId";
 
-    private readonly IUserManager _userManager;
     private readonly IServerApplicationPaths _paths;
+    private readonly ScriptInjectionService _injection;
     private readonly ILogger<DonateController> _logger;
 
     public DonateController(
-        IUserManager userManager,
         IServerApplicationPaths paths,
+        ScriptInjectionService injection,
         ILogger<DonateController> logger)
     {
-        _userManager = userManager;
         _paths = paths;
+        _injection = injection;
         _logger = logger;
     }
 
@@ -241,8 +240,30 @@ public class DonateController : ControllerBase
     }
 
     /// <summary>
-    /// Jellyfin puts the user id in a private claim; fall back to resolving the
-    /// username in case that claim name changes between server versions.
+    /// Re-runs the index.html patch on demand. Containers lose the web client when they
+    /// are recreated, so this repairs it without waiting for a server restart.
+    /// </summary>
+    [HttpPost("InstallScript")]
+    [Authorize(Policy = "RequiresElevation")]
+    public ActionResult<DonateStatus> InstallScript()
+    {
+        try
+        {
+            _injection.Install();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Donations: on-demand script installation failed.");
+        }
+
+        return GetStatus();
+    }
+
+    /// <summary>
+    /// Resolves the signed-in user from the auth claims only. Deliberately avoids
+    /// IUserManager: its user entity moved assemblies in 10.11, and touching it from a
+    /// plugin built against a different server version throws at JIT time and takes the
+    /// whole endpoint down with it.
     /// </summary>
     private string? GetUserId()
     {
@@ -252,13 +273,14 @@ public class DonateController : ControllerBase
             return parsed.ToString("N");
         }
 
-        var username = User.Identity?.Name;
-        if (!string.IsNullOrEmpty(username))
+        // Claim names have changed between server versions before; accept any claim
+        // that looks like a user id and holds a GUID.
+        foreach (var candidate in User.Claims)
         {
-            var user = _userManager.GetUserByName(username);
-            if (user is not null)
+            if (candidate.Type.Contains("UserId", StringComparison.OrdinalIgnoreCase)
+                && Guid.TryParse(candidate.Value, out var found))
             {
-                return user.Id.ToString("N");
+                return found.ToString("N");
             }
         }
 

@@ -11,6 +11,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
-        serviceCollection.AddHostedService<ScriptInjectionService>();
+        serviceCollection.AddSingleton<ScriptInjectionService>();
+        serviceCollection.AddHostedService(provider => provider.GetRequiredService<ScriptInjectionService>());
     }
 }

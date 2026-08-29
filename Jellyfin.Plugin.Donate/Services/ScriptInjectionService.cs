@@ -58,6 +58,9 @@ public sealed class ScriptInjectionService : IHostedService
 
     private void OnConfigurationChanged(object? sender, BasePluginConfiguration e) => Apply();
 
+    /// <summary>Re-runs the injection. Safe to call repeatedly.</summary>
+    public void Install() => Apply();
+
     private void Apply()
     {
         try

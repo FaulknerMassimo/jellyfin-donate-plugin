@@ -20,18 +20,21 @@ server — with a donate page listing the payment methods you configure, a per-u
 
 ## Requirements
 
-- Jellyfin server **10.10.x** (built against 10.10.7, `net8.0`)
+- Jellyfin server **10.11.x** (built against 10.11.11, `net9.0`). Jellyfin 10.11 moved to
+  .NET 9 and relocated several APIs, so a 10.10 build is not a safe substitute — it can
+  load and show as *Active* while individual endpoints fail at runtime. For a 10.10
+  server, set `net8.0` and `Jellyfin.Controller 10.10.*` in the csproj and rebuild.
 - The **web client** — the popup is a browser thing. Native apps (Android TV, Roku,
   Infuse, …) don't run web-client scripts, so those users won't see it. The `Donate/*`
   API endpoints still work everywhere.
 
 ## Building
 
-Needs the .NET 8 SDK (`sudo pacman -S dotnet-sdk-8.0` on Arch, or
-`curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0`).
+Needs the .NET 9 SDK (`sudo pacman -S dotnet-sdk-9.0` on Arch, or
+`curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 9.0`).
 
 ```bash
-./build.sh              # -> dist/Jellyfin.Plugin.Donate_1.0.0.0.zip
+./build.sh              # -> dist/Donations_1.0.0.0/ and the matching zip
 ./build.sh --install    # also copies it into a local Jellyfin plugin directory
 ```
 
@@ -85,7 +88,19 @@ The three usual causes:
    the Preview buttons.
 3. **The script isn't in the web client yet.** It's added at server startup, so restart
    Jellyfin after installing, then **hard refresh** the browser (Ctrl+Shift+R). The Status
-   panel reports whether the script is installed and whether the file is writable.
+   panel reports whether the script is installed and whether the file is writable, and
+   **Install the script now** re-applies it without a restart.
+
+### Docker
+
+Containers get a fresh web client whenever they are recreated (`docker compose up -d`
+after an image pull, Watchtower, unRAID's *Force Update*), which silently removes the
+script. The plugin re-injects on every startup, so a normal restart repairs it; if the
+popup disappears after an image update, hit **Install the script now** and hard refresh.
+
+If the container's web root is mounted read-only the injection cannot work at all — the
+Status panel will say so. Either drop the read-only mount or add the tag to your own
+`index.html` and turn off automatic injection.
 
 ## Reaching the donate page
 
@@ -144,6 +159,7 @@ button to reset all of it.
 | `POST /Donate/OptOut` | user | `{"OptOut": true}` — don't remind me again |
 | `POST /Donate/Donated` | user | Marks the user as having donated |
 | `GET /Donate/Status` | admin | Diagnostics behind the Status panel |
+| `POST /Donate/InstallScript` | admin | Re-applies the index.html patch on demand |
 
 From the browser console, `JellyfinDonate.open()` opens the donate page any time, and
 anything with a `data-jf-donate` attribute (or `<a href="#donate">`) does the same when

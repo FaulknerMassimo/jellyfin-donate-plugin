@@ -8,7 +8,7 @@
 set -euo pipefail
 
 VERSION="1.0.0.0"
-TARGET_ABI="10.10.0.0"
+TARGET_ABI="10.11.0.0"
 NAME="Jellyfin.Plugin.Donate"
 GUID="b1f0a5c2-3d7e-4a91-9c5f-2e8d4a6b7c30"
 

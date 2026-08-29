@@ -30,6 +30,9 @@
                         <button is="emby-button" type="button" id="previewPage" class="raised">
                             <span>Preview the donate page</span>
                         </button>
+                        <button is="emby-button" type="button" id="installScript" class="raised">
+                            <span>Install the script now</span>
+                        </button>
                     </div>
                     <div class="fieldDescription" style="margin-top:.6em;">
                         The previews use your saved settings, so save first to see changes.
@@ -628,6 +631,28 @@
                     window.JellyfinDonate.open();
                 }
             }
+
+            page.querySelector('#installScript').addEventListener('click', function () {
+                Dashboard.showLoadingMsg();
+                ApiClient.ajax({
+                    type: 'POST',
+                    url: ApiClient.getUrl('Donate/InstallScript'),
+                    dataType: 'json'
+                }).then(function (status) {
+                    Dashboard.hideLoadingMsg();
+                    loadStatus();
+                    Dashboard.alert({
+                        title: status.ScriptInstalled ? 'Script installed' : 'Could not install the script',
+                        message: status.ScriptInstalled
+                            ? 'Now hard refresh this page (Ctrl+Shift+R) and the popup will be live.'
+                            : 'Jellyfin could not write to ' + status.IndexPath
+                              + '. See the status panel for details.'
+                    });
+                }, function () {
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert({ title: 'Failed', message: 'The request did not go through.' });
+                });
+            });
 
             page.querySelector('#previewPopup').addEventListener('click', function () {
                 preview('popup');
