@@ -21,8 +21,11 @@ public sealed class ScriptInjectionService : IHostedService
 {
     private const string PluginMarker = "Jellyfin.Plugin.Donate";
 
+    // Matches only the tag itself. Deliberately no leading \s*: that would swallow a
+    // newline belonging to whatever precedes us (another plugin's script tag), so
+    // removing ours would not restore the file byte for byte.
     private static readonly Regex _existingTag = new(
-        "\\s*<script[^>]*plugin=\"" + PluginMarker + "\"[^>]*>\\s*</script>",
+        "<script[^>]*plugin=\"" + PluginMarker + "\"[^>]*>\\s*</script>",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     private readonly IServerApplicationPaths _paths;
@@ -71,7 +74,7 @@ public sealed class ScriptInjectionService : IHostedService
                 _logger.LogWarning(
                     "Donations: could not find the web client at {Path}. The donation popup will not load. "
                     + "If you use a separate web client (Docker image, reverse proxy, or a client app), add "
-                    + "this to its index.html manually: <script plugin=\"{Marker}\" src=\"Donate/ClientScript\" defer></script>",
+                    + "this to its index.html manually: <script plugin=\"{Marker}\" src=\"../Donate/ClientScript\" defer></script>",
                     indexPath,
                     PluginMarker);
                 return;
@@ -105,7 +108,7 @@ public sealed class ScriptInjectionService : IHostedService
                 ex,
                 "Donations: no write permission on the web client directory, so the popup script could not be "
                 + "installed. Either make {Path} writable by the Jellyfin user, or add "
-                + "<script plugin=\"{Marker}\" src=\"Donate/ClientScript\" defer></script> to index.html yourself.",
+                + "<script plugin=\"{Marker}\" src=\"../Donate/ClientScript\" defer></script> to index.html yourself.",
                 _paths.WebPath,
                 PluginMarker);
         }
@@ -136,8 +139,13 @@ public sealed class ScriptInjectionService : IHostedService
             return null;
         }
 
+        // index.html is served from /web/, so a bare relative src would resolve to
+        // /web/Donate/ClientScript and 404 - the API route lives at the server root.
+        // "../" walks out of /web/ and also survives a reverse-proxy base path
+        // (/jellyfin/web/ -> /jellyfin/Donate/ClientScript); browsers clamp it at the
+        // root, so it stays correct even if index.html is ever served from /.
         var tag = "<script plugin=\"" + PluginMarker + "\" version=\"" + version
-            + "\" src=\"Donate/ClientScript?v=" + version + "\" defer></script>";
+            + "\" src=\"../Donate/ClientScript?v=" + version + "\" defer></script>";
 
         return stripped.Insert(bodyEnd, tag);
     }

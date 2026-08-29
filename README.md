@@ -61,8 +61,12 @@ and other UI plugins — this one patches a single tagged `<script>` tag into th
 client's `index.html` on startup and whenever you save settings:
 
 ```html
-<script plugin="Jellyfin.Plugin.Donate" version="1.0.0.0" src="Donate/ClientScript?v=1.0.0.0" defer></script>
+<script plugin="Jellyfin.Plugin.Donate" version="1.1.1.0" src="../Donate/ClientScript?v=1.1.1.0" defer></script>
 ```
+
+The `../` matters: `index.html` is served from `/web/`, so a bare relative `src` resolves
+to `/web/Donate/ClientScript` and 404s — the API route lives at the server root. `../`
+walks out of `/web/` and keeps working behind a reverse-proxy base path.
 
 The tag is stripped and rewritten every time, so it never duplicates, and a server or
 web-client upgrade that resets `index.html` just gets it re-applied on the next restart.
