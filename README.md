@@ -135,14 +135,14 @@ Wise, bank transfer and Bitcoin. Each card has:
 | Field | Notes |
 | --- | --- |
 | Name | Card heading |
-| Link | Optional. Omit it for methods with no URL, like Interac e-Transfer |
+| Link | Optional. `https://` is filled in if you leave it off, so `paypal.me/you` works. Omit entirely for methods with no URL, like Interac e-Transfer |
 | Handle / address | Optional. Shown with a **Copy** button — the e-mail, `@handle` or `$cashtag` |
 | Instructions | Optional free text, e.g. *"Auto-deposit is on, no security question"* |
 | Icon | 1–2 characters or an emoji |
 | Accent colour | Any CSS colour |
 | Image / QR URL | Optional. `https://` or a `data:image/...` URI — good for payment QR codes |
 
-A method needs a link **or** a handle to be shown. If no method is enabled, the popup
+A method needs a usable link **or** a handle to be shown; one with neither is left out rather than drawn as an empty card. If no method is enabled, the popup
 stays hidden — the plugin won't nag people toward an empty page.
 
 **Appearance** — colour scheme (auto / dark / light), accent colour, the sidebar *Donate*

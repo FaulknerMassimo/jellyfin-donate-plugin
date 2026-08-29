@@ -420,6 +420,22 @@
                 });
             }
 
+            // Fill in the scheme so a link typed as "paypal.me/you" is stored - and shown
+            // back - as a real URL, instead of being silently dropped at display time.
+            function normalizeUrl(value) {
+                var trimmed = (value || '').trim();
+                if (!trimmed || /^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
+                    return trimmed;
+                }
+                if (/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(trimmed)) {
+                    return 'mailto:' + trimmed;
+                }
+                if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?(\/|\?|#|$)/i.test(trimmed)) {
+                    return 'https://' + trimmed;
+                }
+                return trimmed;
+            }
+
             function collectMethods() {
                 var cards = page.querySelectorAll('#methodsList [data-index]');
                 var result = [];
@@ -433,7 +449,10 @@
                     var inputs = card.querySelectorAll('input[data-key]');
                     for (var j = 0; j < inputs.length; j++) {
                         var key = inputs[j].getAttribute('data-key');
-                        if (key !== 'Enabled') {
+                        if (key === 'Url' || key === 'ImageUrl') {
+                            method[key] = normalizeUrl(inputs[j].value);
+                            inputs[j].value = method[key];
+                        } else if (key !== 'Enabled') {
                             method[key] = inputs[j].value.trim();
                         }
                     }

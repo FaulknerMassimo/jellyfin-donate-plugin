@@ -1,7 +1,7 @@
 ---
 name: "Donations"
 guid: "b1f0a5c2-3d7e-4a91-9c5f-2e8d4a6b7c30"
-version: "1.1.1.0"
+version: "1.1.2.0"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 owner: "you"
@@ -15,6 +15,11 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.Donate.dll"
 changelog: |
+  ## 1.1.2.0
+  Accept payment links typed without https://, hide payment cards that would
+  render empty, and rebuild the sidebar entry by cloning a real nav link so it
+  matches the 10.11 React client instead of using the old markup.
+
   ## 1.1.1.0
   Fix the injected script tag resolving to /web/Donate/ClientScript and 404ing,
   so the client script never loaded in the browser.

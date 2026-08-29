@@ -158,12 +158,29 @@
         return /^(https?:\/\/|data:image\/)/i.test(trimmed) ? trimmed : '';
     }
 
+    /*
+     * Admins type "paypal.me/name" far more often than "https://paypal.me/name", and
+     * silently dropping the link left an empty card. Fill in the obvious scheme rather
+     * than rejecting it, while still refusing anything that is not a web/payment link
+     * (javascript: and friends).
+     */
     function safeUrl(url) {
         if (!url) {
             return '';
         }
+
         var trimmed = String(url).trim();
-        return /^(https?:|mailto:|bitcoin:|lightning:)/i.test(trimmed) ? trimmed : '';
+        if (/^(https?:|mailto:|bitcoin:|lightning:|upi:)/i.test(trimmed)) {
+            return trimmed;
+        }
+        if (/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(trimmed)) {
+            return 'mailto:' + trimmed;
+        }
+        // A bare host, optionally with a path: "paypal.me/x", "www.example.com".
+        if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?(\/|\?|#|$)/i.test(trimmed)) {
+            return 'https://' + trimmed;
+        }
+        return '';
     }
 
     function copyText(value, onDone) {
@@ -460,10 +477,23 @@
             dialog.appendChild(empty);
         } else {
             var grid = el('div', 'jfd-methods');
+            var shown = 0;
             for (var i = 0; i < methods.length; i++) {
-                grid.appendChild(buildMethodCard(methods[i], thanks));
+                var card = buildMethodCard(methods[i], thanks);
+                // A method whose link could not be understood and that has no handle
+                // would render as an empty box - leave it out entirely.
+                if (card.getAttribute('data-usable') === '1') {
+                    grid.appendChild(card);
+                    shown++;
+                }
             }
-            dialog.appendChild(grid);
+            if (shown) {
+                dialog.appendChild(grid);
+            } else {
+                dialog.appendChild(el('div', 'jfd-empty',
+                    'The payment methods are not set up correctly yet - ask the server administrator '
+                    + 'to check the links under Dashboard > Plugins > Donations.'));
+            }
         }
 
         dialog.appendChild(thanks.node);
@@ -516,6 +546,7 @@
 
     function buildMethodCard(method, thanks) {
         var card = el('div', 'jfd-method');
+        card.setAttribute('data-usable', (safeUrl(method.Url) || method.Handle) ? '1' : '0');
         var accent = method.Color || (config && config.AccentColor) || '#00a4dc';
 
         var head = el('div', 'jfd-method-head');
@@ -638,53 +669,119 @@
      * markup ever changes shape we simply do nothing and the floating button and
      * popup still work.
      */
+    /*
+     * Finds a real navigation link in the sidebar. Jellyfin 10.11 rebuilt the web client
+     * on React/MUI, so the old .navMenuOption markup is gone and hardcoding class names
+     * produces an unstyled inline link. Cloning a link that is already there means we
+     * inherit whatever structure and styling the current client uses.
+     */
+    function findNavTemplate() {
+        var selectors = [
+            '.mainDrawer a[href*="#/home"]',
+            '.mainDrawer a[href*="#!/home"]',
+            'nav a[href*="#/home"]',
+            '[class*="drawer" i] a[href*="#/home"]',
+            '[class*="nav" i] a[href*="#/home"]',
+            'a.navMenuOption'
+        ];
+
+        for (var i = 0; i < selectors.length; i++) {
+            var found;
+            try {
+                found = document.querySelector(selectors[i]);
+            } catch (err) {
+                found = null;
+            }
+            if (found && found.parentNode) {
+                return found;
+            }
+        }
+        return null;
+    }
+
     function addMenuItem() {
         if (!config || !config.Enabled || !config.ShowMenuItem || !loggedInUserId()) {
             return;
         }
 
         try {
-            var drawer = document.querySelector('.mainDrawer .navMenuOptions')
-                || document.querySelector('.mainDrawer .drawerContent')
-                || document.querySelector('.mainDrawer');
-            if (!drawer || drawer.querySelector('.jfd-menu-item')) {
+            var template = findNavTemplate();
+            if (!template) {
+                // Nothing safe to copy - the floating button is the fallback.
                 return;
             }
 
-            var template = drawer.querySelector('.navMenuOption');
-            var link = document.createElement('a');
-            link.className = 'jfd-menu-item ' + (template ? template.className : 'navMenuOption');
-            link.href = '#';
-            link.setAttribute('data-jf-donate', '');
+            // The repeating unit may be the link itself, or a wrapper around it
+            // (MUI puts each link in its own list item). Climb while we are an only
+            // child so the clone is inserted as a sibling of the other entries.
+            var unit = template;
+            while (unit.parentNode
+                && unit.parentNode !== document.body
+                && unit.parentNode.children.length === 1) {
+                unit = unit.parentNode;
+            }
 
-            var iconClass = 'material-icons navMenuOptionIcon';
-            var textClass = 'navMenuOptionText';
-            if (template) {
-                var templateIcon = template.querySelector('.navMenuOptionIcon');
-                var templateText = template.querySelector('.navMenuOptionText');
-                if (templateIcon) {
-                    iconClass = templateIcon.className;
+            var container = unit.parentNode;
+            if (!container || container.querySelector('.jfd-menu-item')) {
+                return;
+            }
+
+            var item = unit.cloneNode(true);
+
+            // Drop active/selected styling copied from the link we cloned - on the clone
+            // and everything inside it, or the entry looks permanently highlighted
+            // (MUI puts Mui-selected on the inner button, not the list item).
+            var styled = [item];
+            var inner = item.querySelectorAll('*');
+            for (var c = 0; c < inner.length; c++) {
+                styled.push(inner[c]);
+            }
+            for (var d = 0; d < styled.length; d++) {
+                if (typeof styled[d].className === 'string' && styled[d].className) {
+                    styled[d].className = styled[d].className
+                        .replace(/[\w-]*(active|selected|current)[\w-]*/gi, '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
                 }
-                if (templateText) {
-                    textClass = templateText.className;
+                styled[d].removeAttribute('aria-current');
+            }
+            item.classList.add('jfd-menu-item');
+            item.setAttribute('data-jf-donate', '');
+            item.style.cursor = 'pointer';
+            item.removeAttribute('href');
+
+            // The clone may be a wrapper; neutralise the anchor inside it too.
+            var innerLinks = item.querySelectorAll('a[href]');
+            for (var k = 0; k < innerLinks.length; k++) {
+                innerLinks[k].removeAttribute('href');
+                innerLinks[k].setAttribute('data-jf-donate', '');
+                innerLinks[k].style.cursor = 'pointer';
+            }
+
+            // Swap the label, and the icon ligature when the client uses one. Leaf
+            // elements holding text are the icon (first) and the label (last); an SVG
+            // icon has no text, so only the label gets replaced and the cloned icon stays.
+            var leaves = [];
+            var nodes = item.querySelectorAll('*');
+            for (var i = 0; i < nodes.length; i++) {
+                if (!nodes[i].children.length && nodes[i].textContent.trim()) {
+                    leaves.push(nodes[i]);
                 }
             }
 
-            // The icon is a Material Icons ligature: without that font it would render
-            // as the literal word, so only add it when the drawer is really using it.
-            if (iconClass.indexOf('material-icons') !== -1) {
-                var icon = document.createElement('span');
-                icon.className = iconClass;
-                icon.textContent = 'volunteer_activism';
-                link.appendChild(icon);
+            var label = config.PersistentButtonText || 'Donate';
+            if (leaves.length >= 2) {
+                if (/material-icons|icon/i.test(leaves[0].className || '')) {
+                    leaves[0].textContent = 'volunteer_activism';
+                }
+                leaves[leaves.length - 1].textContent = label;
+            } else if (leaves.length === 1) {
+                leaves[0].textContent = label;
+            } else {
+                item.textContent = label;
             }
 
-            var text = document.createElement('span');
-            text.className = textClass;
-            text.textContent = config.PersistentButtonText || 'Donate';
-            link.appendChild(text);
-
-            drawer.appendChild(link);
+            container.appendChild(item);
         } catch (err) {
             log('could not add the sidebar item', err);
         }
