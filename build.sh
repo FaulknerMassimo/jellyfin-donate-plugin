@@ -14,7 +14,8 @@ GUID="b1f0a5c2-3d7e-4a91-9c5f-2e8d4a6b7c30"
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 out="$root/dist"
-stage="$out/$NAME"
+PLUGIN_DIR="Donations_$VERSION"   # the folder name Jellyfin expects on the server
+stage="$out/$PLUGIN_DIR"
 
 rm -rf "$out"
 mkdir -p "$stage"
@@ -44,8 +45,12 @@ cat > "$stage/meta.json" <<META
 }
 META
 
-(cd "$stage" && zip -qr "$out/${NAME}_${VERSION}.zip" .)
-echo "Packaged $out/${NAME}_${VERSION}.zip  (md5 $checksum)"
+(cd "$out" && zip -qr "$out/${NAME}_${VERSION}.zip" "$PLUGIN_DIR")
+echo
+echo "Upload this folder into your Jellyfin plugins directory, then restart Jellyfin:"
+echo "    $stage/"
+echo "Or the same thing zipped: $out/${NAME}_${VERSION}.zip"
+echo "(dll md5 $checksum)"
 
 if [[ "${1:-}" == "--install" ]]; then
     for dir in \
@@ -54,7 +59,7 @@ if [[ "${1:-}" == "--install" ]]; then
         "/config/plugins"
     do
         if [[ -d "$dir" ]]; then
-            target="$dir/Donations_$VERSION"
+            target="$dir/$PLUGIN_DIR"
             mkdir -p "$target"
             cp "$stage/$NAME.dll" "$stage/meta.json" "$target/"
             echo "Installed to $target - restart Jellyfin to load it."
