@@ -236,6 +236,30 @@
     };
 
     /*
+     * Interac has no Simple Icons entry and its mark carries usage rules, so the badge
+     * is embedded here as a small PNG rather than hotlinked - same rule as the rest:
+     * nothing third-party is fetched into a viewer's browser. 96px, palette-reduced,
+     * about 1.2KB; it carries its own background so the tile is left transparent.
+     */
+    var INTERAC_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAMAAADVRocKAAAAKlBMVEX/////uSr+uCr/vCvdoi'
+            + 'nLlim4iSlsVCcuKSZIOyePbCh+YSinfShYRycOUVp5AAAAAXRSTlMAQObYZgAABB9JREFUaN7tmt2W4iAMgCUkUCi8/+suSY'
+            + 'BSq+uocLF7hpuZU2u+/BNab7e+jDFgJiwWcrsuA9bOEK8LzVLxZVk4IYw1c+UzwpzkL1gHYYX+RoT27Fm0KgHMGhdxpNcFYD'
+            + 'AB18kv9bAyArr+A8CU/vZ8wX/gol/AL+AX8G8CAMlR22YWAJzfygoR1gAgbnXtMBEAAPfyt83NAmDac85RvO5Ysk+CyTAFgH'
+            + 'tVOFAxIJd/YpkmEnPwWwAQGMrdJRksGxBYLkaHX8UAiQz5QMjyg98DE8iwa/bTjZ8BiujNUxFKqfqGNKqMS28BkIbBDFDNFg'
+            + '9nTnfy4vPq/IShJc8PASmHrhBQzCHkxKNs6pmYg5f0eQl4PKCyfkk/6sniQS2QWkLE8lUgJ3mZcBsBeKQpoEv4BBApFh/jkS'
+            + 'yxATJpQGL7TC1I9aqXzwVAxRPbA0CTmqx4oLg9SBqqiyQdD8v4vloGfLndwADJ3isA966ZjZIsJetFRQXEQ4ewJ9XdtwKO1Z'
+            + 'kHIByAUvrRGUtHUxHNxLea6EmzvviWJYbiXg2yKLJFBHfuRWqBrYERZYp+FZATyf2imPQyLwDRyNUyMOr9qlTILRsGQPGscR'
+            + 'yY1g6Rcg41i0RvpKROy5BGT+xdx3Lr0UwzmnuAaOF7sgBWuzWbQuhfNR2wi0EtFCV/oMU8onkM4K+qha166t8mfU90BmwOXW'
+            + '4JbMD5nH3sEb0CMoHoUwQ0CyqgFC23SGvtyUW1WVdbmDGeOYYga6ACWdMEnABeupLlLf2woGdajIWfHpxmxjoQQA/ZPSBKlr'
+            + 'kS53hY0JpGBKDHx9UBYI9CPwGqq0WgdrMBYNjlkczTNRSaPXrhHUAr19UcKRvXALhz+WsA3QNcU7z4OVdQumxcXwCkXQ/DCO'
+            + 'citR33E4C9A+ToyR7dOr557r3UwQgwtSx5P4hBYPSe+FcA1wG8Ozv64NT+EGAbQAfB/M0DmXE/EEePQebOEtMnej8GlKkEE5'
+            + '4A36/BRTJa6AhB3NamyD81O4h+n/78a2x28duA/hWQdf/a3k70n7hIK78CJj+E1MmubFKlKa6zgAdb77XfUHJfinwA0FNEBe'
+            + 'xbnBloAdRRswHaVDsP4LTjdMD7TfkFwCQZSAaAnhDnAQy6GEcL6uw8CwB8SKwxcBUQpveiO8CsgrgEuQPcnJJWF8UyrhKsA8'
+            + 'iGm9QCH1ZYkHKPQV8zAWOQD8AU+ddWsQSAvhyBE6wD8DxxPijNBihlXZCXAo6+vMRF+NyCmb2orv0E+Lqb6jv28V2jG+VPGE'
+            + '0tv0a7PfPRhBDUV9bD0zTqjyMmbWj6xnq40J+yztr0L+/coZzkeW+YoLvRCOg7cR4dm6tghvL1Vxq3gdAvTlln+c1Jc+fq80'
+            + '9DJv90gD1y+fHMTPkn94yMKcmJJ+l/APYJVeGLU3U4AAAAAElFTkSuQmCC';
+
+    /*
      * Methods with no brand mark available get a glyph that says what they are, rather
      * than a text badge. Interac e-Transfer is literally an email money transfer, so an
      * envelope reads correctly - and drawing its trademark would be wrong anyway.
@@ -263,7 +287,7 @@
 
     // Checked in order; the first pattern that matches the method name wins.
     var GENERIC_MATCHERS = [
-        { pattern: /interac|etransfer|emailtransfer|virement/, icon: 'envelope' },
+        { pattern: /etransfer|emailtransfer|virement/, icon: 'envelope' },
         { pattern: /bank|iban|swift|sepa|wire|directdeposit|eft/, icon: 'bank' },
         { pattern: /card|visa|mastercard|amex|credit|debit/, icon: 'card' },
         { pattern: /cash|money|envelope|inperson/, icon: 'cash' }
@@ -273,6 +297,8 @@
      * Maps a method name onto a brand mark. "Cash App", "cash-app" and "cashapp" all
      * land on the same icon, and a few common aliases are spelled out.
      */
+    BRAND_ICONS.interac = { color: '#FDB82A', image: INTERAC_LOGO };
+
     var BRAND_ALIASES = {
         cash: 'cashapp',
         squarecash: 'cashapp',
@@ -453,6 +479,8 @@
             'box-shadow:inset 0 0 0 1px rgba(128,128,128,.35);',
             'justify-content:center;font-size:15px;font-weight:700;color:#fff;background:var(--jfd-accent);',
             'text-transform:uppercase;}',
+            '.jfd-icon-image{overflow:hidden;background:transparent !important;}',
+            '.jfd-icon-image img{width:100%;height:100%;object-fit:cover;display:block;}',
             '.jfd-method-name{font-weight:600;font-size:1em;}',
             '.jfd-handle{display:flex;align-items:center;gap:6px;}',
             '.jfd-handle code{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;',
@@ -750,17 +778,26 @@
 
         // Brand mark when we recognise the method, otherwise the text badge.
         var brand = brandFor(method.Name);
-        if (brand) {
+        if (brand && brand.image) {
+            var logo = document.createElement('img');
+            logo.src = brand.image;
+            logo.alt = '';
+            icon.appendChild(logo);
+            icon.className = 'jfd-icon jfd-icon-image';
+        } else if (brand) {
             icon.appendChild(brandSvg(brand));
-            if (!method.Color) {
-                accent = brand.color;
-            }
         } else {
             icon.textContent = (method.Icon || method.Name || '?').substring(0, 2);
         }
 
+        if (brand && !method.Color) {
+            accent = brand.color;
+        }
+
         accent = separateFromBackground(accent, isLightTheme());
-        icon.style.background = accent;
+        // A logo image supplies its own background; tinting behind it would show at the
+        // edges and fight the mark.
+        icon.style.background = (brand && brand.image) ? 'transparent' : accent;
         icon.style.color = readableOn(accent);
         head.appendChild(icon);
         head.appendChild(el('div', 'jfd-method-name', method.Name));

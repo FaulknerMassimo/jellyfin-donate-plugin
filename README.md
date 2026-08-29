@@ -154,9 +154,10 @@ glyph that matches what it is — an envelope for Interac e-Transfer and other e
 transfers, a bank for IBAN/SEPA/wire, a card for card payments, a banknote for cash —
 and finally to the icon text.
 
-Interac's own logo is deliberately not reproduced: it isn't in the Simple Icons set and
-its trademark carries usage rules, so an envelope is used instead, which is what an
-e-Transfer actually is.
+Interac e-Transfer uses the real Interac badge. It isn't in the Simple Icons set, so it
+is embedded as a small palette-reduced PNG (~1.2KB) rather than hotlinked — same rule as
+the vector marks: nothing is fetched from a third party. A method named just
+"e-Transfer", without Interac, still gets the generic envelope.
 
 Leave the **Accent colour** blank and the card uses the brand's official colour. Text on
 the icon and button flips between black and white based on the background's luminance,
