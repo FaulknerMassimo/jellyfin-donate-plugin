@@ -150,8 +150,18 @@ entry and the floating *Donate* button (both on by default), the label used for 
 an *Allow HTML in messages* switch (off by default; messages render as plain text, blank
 lines become paragraphs).
 
-**User reminders** — shows how many users opted out or marked themselves as donors, with a
-button to reset all of it.
+**User reminders** — shows how many users are tracked, how many marked themselves as
+donors, how many opted out and how many have been prompted, with separate resets:
+
+| Button | Clears |
+| --- | --- |
+| Reset opt-outs | Makes users who ticked *Don't remind me again* eligible again |
+| Reset donation count | Forgets who said they donated, so the counter restarts and they can be prompted again |
+| Reset reminder timers | Forgets when each user was last asked, restarting the reminder interval |
+| Reset everything | All three |
+
+Users left holding no state are dropped, so the stored configuration doesn't grow
+empty records.
 
 ## API
 

@@ -249,9 +249,28 @@
                 <div class="verticalSection">
                     <h2 class="sectionTitle">User reminders</h2>
                     <p class="fieldDescription" id="optOutSummary"></p>
-                    <button is="emby-button" type="button" id="resetStates" class="raised">
-                        <span>Reset all opt-outs and reminder history</span>
-                    </button>
+                    <div style="display:flex;gap:.6em;flex-wrap:wrap;margin-top:.6em;">
+                        <button is="emby-button" type="button" id="resetOptOuts" class="raised">
+                            <span>Reset opt-outs</span>
+                        </button>
+                        <button is="emby-button" type="button" id="resetDonations" class="raised">
+                            <span>Reset donation count</span>
+                        </button>
+                        <button is="emby-button" type="button" id="resetTimers" class="raised">
+                            <span>Reset reminder timers</span>
+                        </button>
+                        <button is="emby-button" type="button" id="resetStates" class="raised">
+                            <span>Reset everything</span>
+                        </button>
+                    </div>
+                    <div class="fieldDescription" style="margin-top:.6em;">
+                        <strong>Reset opt-outs</strong> makes users who ticked &quot;Don't remind me again&quot;
+                        eligible for the popup again.
+                        <strong>Reset donation count</strong> clears who has marked themselves as having
+                        donated, so the counter starts from zero and they can be prompted again.
+                        <strong>Reset reminder timers</strong> forgets when each user was last asked, so the
+                        &quot;minimum days between reminders&quot; interval starts over.
+                    </div>
                 </div>
 
                 <br />
@@ -465,6 +484,7 @@
                 var states = config.UserStates || [];
                 var optedOut = 0;
                 var donated = 0;
+                var prompted = 0;
                 for (var i = 0; i < states.length; i++) {
                     if (states[i].OptedOut) {
                         optedOut++;
@@ -472,10 +492,38 @@
                     if (states[i].DonatedUtc) {
                         donated++;
                     }
+                    if (states[i].LastPromptUtc) {
+                        prompted++;
+                    }
                 }
                 page.querySelector('#optOutSummary').textContent =
-                    states.length + ' user(s) tracked - ' + optedOut + ' opted out of reminders, '
-                    + donated + ' marked as having donated.';
+                    states.length + ' user(s) tracked \u2014 ' + donated + ' marked as having donated, '
+                    + optedOut + ' opted out of reminders, ' + prompted + ' prompted at least once.';
+            }
+
+            /*
+             * Clears one field across every user and drops entries that end up holding
+             * nothing, so the stored configuration does not accumulate empty records.
+             */
+            function resetStates(field, confirmation) {
+                if (window.confirm && !window.confirm(confirmation)) {
+                    return;
+                }
+
+                var states = config.UserStates || [];
+                for (var i = 0; i < states.length; i++) {
+                    if (field === 'OptedOut') {
+                        states[i].OptedOut = false;
+                    } else {
+                        states[i][field] = null;
+                    }
+                }
+
+                config.UserStates = states.filter(function (state) {
+                    return state.OptedOut || state.DonatedUtc || state.LastPromptUtc;
+                });
+
+                save();
             }
 
             function setChecked(id, value) {
@@ -682,11 +730,27 @@
                 preview('page');
             });
 
+            page.querySelector('#resetOptOuts').addEventListener('click', function () {
+                resetStates('OptedOut',
+                    'Clear every opt-out? Users who ticked "Don\'t remind me again" will start seeing '
+                    + 'the popup again.');
+            });
+
+            page.querySelector('#resetDonations').addEventListener('click', function () {
+                resetStates('DonatedUtc',
+                    'Reset the donation count to zero? This forgets who said they donated, so they can '
+                    + 'be prompted again.');
+            });
+
+            page.querySelector('#resetTimers').addEventListener('click', function () {
+                resetStates('LastPromptUtc',
+                    'Forget when each user was last asked? The "minimum days between reminders" '
+                    + 'interval starts over for everyone.');
+            });
+
             page.querySelector('#resetStates').addEventListener('click', function () {
-                var message = 'Clear every user opt-out and reminder timestamp? Users who ticked '
-                    + '"Don\'t remind me again" will start seeing the popup again.';
-                var proceed = window.confirm ? window.confirm(message) : true;
-                if (!proceed) {
+                var message = 'Clear all of it - opt-outs, donation records and reminder timestamps?';
+                if (window.confirm && !window.confirm(message)) {
                     return;
                 }
                 config.UserStates = [];
