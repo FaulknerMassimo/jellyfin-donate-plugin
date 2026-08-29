@@ -235,7 +235,8 @@ public class DonateController : ControllerBase
             WebClientWritable = injection.Writable,
             IndexPath = injection.IndexPath,
             EnabledMethodCount = enabledMethods,
-            ViewerExcludedAsAdmin = viewerExcluded
+            ViewerExcludedAsAdmin = viewerExcluded,
+            Version = Plugin.Instance?.Version?.ToString() ?? "unknown"
         };
     }
 

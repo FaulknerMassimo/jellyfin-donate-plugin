@@ -113,4 +113,7 @@ public class DonateStatus
 
     /// <summary>True when the person viewing the admin page is excluded by the admin setting.</summary>
     public bool ViewerExcludedAsAdmin { get; set; }
+
+    /// <summary>Version of the plugin assembly actually running.</summary>
+    public string Version { get; set; } = string.Empty;
 }

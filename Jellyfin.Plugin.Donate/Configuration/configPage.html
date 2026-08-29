@@ -538,7 +538,8 @@
 
                     var detail = document.createElement('p');
                     detail.style.cssText = 'margin:.4em 0 0;opacity:.8;';
-                    detail.textContent = 'Script installed in the web client: '
+                    detail.textContent = 'Plugin version ' + (status.Version || '?')
+                        + '   |   Script installed in the web client: '
                         + (status.ScriptInstalled ? 'yes' : 'no')
                         + '   |   Enabled payment methods: ' + status.EnabledMethodCount
                         + (status.WebClientFound ? '' : '   |   web client not found');

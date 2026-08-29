@@ -7,7 +7,8 @@
 #
 set -euo pipefail
 
-VERSION="1.0.0.0"
+# Single source of truth: the version comes from the csproj.
+VERSION="$(grep -oP '(?<=<Version>)[0-9.]+' "$(dirname "${BASH_SOURCE[0]}")/Jellyfin.Plugin.Donate/Jellyfin.Plugin.Donate.csproj")"
 TARGET_ABI="10.11.0.0"
 NAME="Jellyfin.Plugin.Donate"
 GUID="b1f0a5c2-3d7e-4a91-9c5f-2e8d4a6b7c30"
@@ -45,12 +46,16 @@ cat > "$stage/meta.json" <<META
 }
 META
 
+actual="$(strings "$stage/$NAME.dll" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)"
 (cd "$out" && zip -qr "$out/${NAME}_${VERSION}.zip" "$PLUGIN_DIR")
 echo
 echo "Upload this folder into your Jellyfin plugins directory, then restart Jellyfin:"
 echo "    $stage/"
 echo "Or the same thing zipped: $out/${NAME}_${VERSION}.zip"
-echo "(dll md5 $checksum)"
+echo "(version $VERSION, dll md5 $checksum)"
+echo
+echo "Delete every existing Donations_* folder on the server before copying this one in,"
+echo "then restart Jellyfin. The plugins page should then show version $VERSION."
 
 if [[ "${1:-}" == "--install" ]]; then
     for dir in \
