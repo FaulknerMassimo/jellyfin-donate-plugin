@@ -629,6 +629,77 @@
         document.body.appendChild(persistentButton);
     }
 
+    // ------------------------------------------------------------ sidebar link
+
+    /*
+     * Adds a "Donate" row to the web client's navigation drawer. The drawer is
+     * rebuilt on navigation, so this re-runs on a MutationObserver. It copies the
+     * classes off an existing row so it inherits whatever theme is in use; if the
+     * markup ever changes shape we simply do nothing and the floating button and
+     * popup still work.
+     */
+    function addMenuItem() {
+        if (!config || !config.Enabled || !config.ShowMenuItem || !loggedInUserId()) {
+            return;
+        }
+
+        try {
+            var drawer = document.querySelector('.mainDrawer .navMenuOptions')
+                || document.querySelector('.mainDrawer .drawerContent')
+                || document.querySelector('.mainDrawer');
+            if (!drawer || drawer.querySelector('.jfd-menu-item')) {
+                return;
+            }
+
+            var template = drawer.querySelector('.navMenuOption');
+            var link = document.createElement('a');
+            link.className = 'jfd-menu-item ' + (template ? template.className : 'navMenuOption');
+            link.href = '#';
+            link.setAttribute('data-jf-donate', '');
+
+            var iconClass = 'material-icons navMenuOptionIcon';
+            var textClass = 'navMenuOptionText';
+            if (template) {
+                var templateIcon = template.querySelector('.navMenuOptionIcon');
+                var templateText = template.querySelector('.navMenuOptionText');
+                if (templateIcon) {
+                    iconClass = templateIcon.className;
+                }
+                if (templateText) {
+                    textClass = templateText.className;
+                }
+            }
+
+            // The icon is a Material Icons ligature: without that font it would render
+            // as the literal word, so only add it when the drawer is really using it.
+            if (iconClass.indexOf('material-icons') !== -1) {
+                var icon = document.createElement('span');
+                icon.className = iconClass;
+                icon.textContent = 'volunteer_activism';
+                link.appendChild(icon);
+            }
+
+            var text = document.createElement('span');
+            text.className = textClass;
+            text.textContent = config.PersistentButtonText || 'Donate';
+            link.appendChild(text);
+
+            drawer.appendChild(link);
+        } catch (err) {
+            log('could not add the sidebar item', err);
+        }
+    }
+
+    function watchDrawer() {
+        if (!window.MutationObserver) {
+            return;
+        }
+        var observer = new MutationObserver(function () {
+            addMenuItem();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
     // ------------------------------------------------------------- login flow
 
     function onUserSignedIn(userId) {
@@ -643,7 +714,10 @@
                 return;
             }
 
+            addMenuItem();
+
             updatePersistentButton();
+            addMenuItem();
 
             if (!config.ShouldPrompt) {
                 return;
@@ -676,6 +750,11 @@
         config = null;
         configUserId = null;
         updatePersistentButton();
+
+        var existing = document.querySelector('.jfd-menu-item');
+        if (existing && existing.parentNode) {
+            existing.parentNode.removeChild(existing);
+        }
     }
 
     function poll() {
@@ -696,6 +775,21 @@
 
     // ------------------------------------------------------------------ boot
 
+    function withConfig(callback) {
+        if (config) {
+            callback();
+            return;
+        }
+        if (!loggedInUserId()) {
+            return;
+        }
+        request('GET', 'Donate/Config').then(function (result) {
+            config = normalizeConfig(result);
+            configUserId = loggedInUserId();
+            callback();
+        });
+    }
+
     window.JellyfinDonate = {
         open: function () {
             if (config) {
@@ -712,6 +806,15 @@
             });
         },
         close: closeOverlay,
+
+        // Used by the admin settings page to preview the popup, ignoring the
+        // "don't show to administrators" and reminder-interval rules.
+        preview: function () {
+            withConfig(function () {
+                showPopup();
+            });
+        },
+
         reload: function () {
             lastUserId = undefined;
             poll();
@@ -731,6 +834,7 @@
         }
     }, true);
 
+    watchDrawer();
     setInterval(poll, POLL_MS);
     poll();
 })();

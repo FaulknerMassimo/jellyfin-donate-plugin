@@ -19,6 +19,23 @@
                     </p>
                 </div>
 
+                <div id="statusPanel" class="verticalSection" style="border:1px solid rgba(128,128,128,.35);
+                     border-radius:8px;padding:1em;margin-bottom:1em;">
+                    <h3 style="margin:0 0 .5em;">Status</h3>
+                    <div id="statusBody" class="fieldDescription">Checking&hellip;</div>
+                    <div style="display:flex;gap:.6em;flex-wrap:wrap;margin-top:.8em;">
+                        <button is="emby-button" type="button" id="previewPopup" class="raised">
+                            <span>Preview the popup</span>
+                        </button>
+                        <button is="emby-button" type="button" id="previewPage" class="raised">
+                            <span>Preview the donate page</span>
+                        </button>
+                    </div>
+                    <div class="fieldDescription" style="margin-top:.6em;">
+                        The previews use your saved settings, so save first to see changes.
+                    </div>
+                </div>
+
                 <div class="checkboxContainer checkboxContainer-withDescription">
                     <label class="emby-checkbox-label">
                         <input is="emby-checkbox" type="checkbox" id="Enabled" />
@@ -199,8 +216,19 @@
                     </div>
                 </div>
 
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label class="emby-checkbox-label">
+                        <input is="emby-checkbox" type="checkbox" id="ShowMenuItem" />
+                        <span>Add a &quot;Donate&quot; entry to the sidebar menu</span>
+                    </label>
+                    <div class="fieldDescription checkboxFieldDescription">
+                        Appears in the hamburger menu alongside Home, Movies and so on.
+                    </div>
+                </div>
+
                 <div class="inputContainer">
-                    <input is="emby-input" type="text" id="PersistentButtonText" label="Floating button text" />
+                    <input is="emby-input" type="text" id="PersistentButtonText"
+                           label="Donate button / menu entry text" />
                 </div>
 
                 <div class="checkboxContainer checkboxContainer-withDescription">
@@ -450,6 +478,7 @@
                     setChecked('ShowToAdministrators', config.ShowToAdministrators);
                     setChecked('StopPromptingAfterDonation', config.StopPromptingAfterDonation);
                     setChecked('ShowPersistentButton', config.ShowPersistentButton);
+                    setChecked('ShowMenuItem', config.ShowMenuItem);
                     setChecked('AllowHtmlInMessages', config.AllowHtmlInMessages);
 
                     setValue('PopupTitle', config.PopupTitle);
@@ -470,7 +499,55 @@
 
                     renderMethods();
                     updateOptOutSummary();
+                    loadStatus();
                     Dashboard.hideLoadingMsg();
+                });
+            }
+
+            function loadStatus() {
+                var target = page.querySelector('#statusBody');
+                ApiClient.ajax({
+                    type: 'GET',
+                    url: ApiClient.getUrl('Donate/Status'),
+                    dataType: 'json'
+                }).then(function (status) {
+                    target.innerHTML = '';
+
+                    var headline = document.createElement('p');
+                    headline.style.cssText = 'margin:0 0 .4em;font-weight:600;';
+                    headline.style.color = status.PopupWillShow ? '#3fbf5f' : '#e0a030';
+                    headline.textContent = status.PopupWillShow
+                        ? 'Working - the popup is live for your users.'
+                        : 'The popup is not showing yet.';
+                    target.appendChild(headline);
+
+                    if (status.Problems && status.Problems.length) {
+                        var list = document.createElement('ul');
+                        list.style.cssText = 'margin:.2em 0 .2em 1.1em;padding:0;';
+                        status.Problems.forEach(function (problem) {
+                            var item = document.createElement('li');
+                            item.style.marginBottom = '.3em';
+                            item.textContent = problem;
+                            list.appendChild(item);
+                        });
+                        target.appendChild(list);
+                    }
+
+                    var detail = document.createElement('p');
+                    detail.style.cssText = 'margin:.4em 0 0;opacity:.8;';
+                    detail.textContent = 'Script installed in the web client: '
+                        + (status.ScriptInstalled ? 'yes' : 'no')
+                        + '   |   Enabled payment methods: ' + status.EnabledMethodCount
+                        + (status.WebClientFound ? '' : '   |   web client not found');
+                    target.appendChild(detail);
+
+                    var refresh = document.createElement('p');
+                    refresh.style.cssText = 'margin:.4em 0 0;opacity:.8;';
+                    refresh.textContent = 'Users need a hard refresh (Ctrl+Shift+R) after the script is '
+                        + 'installed or settings change.';
+                    target.appendChild(refresh);
+                }, function () {
+                    target.textContent = 'Could not read the plugin status.';
                 });
             }
 
@@ -486,6 +563,7 @@
                 config.ShowToAdministrators = page.querySelector('#ShowToAdministrators').checked;
                 config.StopPromptingAfterDonation = page.querySelector('#StopPromptingAfterDonation').checked;
                 config.ShowPersistentButton = page.querySelector('#ShowPersistentButton').checked;
+                config.ShowMenuItem = page.querySelector('#ShowMenuItem').checked;
                 config.AllowHtmlInMessages = page.querySelector('#AllowHtmlInMessages').checked;
 
                 config.PopupTitle = page.querySelector('#PopupTitle').value;
@@ -508,6 +586,7 @@
                     Dashboard.processPluginConfigurationUpdateResult(result);
                     renderMethods();
                     updateOptOutSummary();
+                    loadStatus();
                 });
             }
 
@@ -531,6 +610,31 @@
                     Enabled: true
                 });
                 renderMethods();
+            });
+
+            function preview(kind) {
+                if (!window.JellyfinDonate) {
+                    Dashboard.alert({
+                        title: 'Script not loaded',
+                        message: 'The popup script is not running in this browser yet. Restart Jellyfin so it '
+                            + 'can be added to the web client, then hard refresh this page (Ctrl+Shift+R).'
+                    });
+                    return;
+                }
+                window.JellyfinDonate.close();
+                if (kind === 'popup') {
+                    window.JellyfinDonate.preview();
+                } else {
+                    window.JellyfinDonate.open();
+                }
+            }
+
+            page.querySelector('#previewPopup').addEventListener('click', function () {
+                preview('popup');
+            });
+
+            page.querySelector('#previewPage').addEventListener('click', function () {
+                preview('page');
             });
 
             page.querySelector('#resetStates').addEventListener('click', function () {

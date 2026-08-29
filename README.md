@@ -69,6 +69,35 @@ Turning **"Add the popup script automatically"** off removes it again cleanly.
 copy of the web client), the plugin logs a warning and does nothing else. Add the tag to
 your `index.html` yourself and leave the auto-inject option off.
 
+## "I installed it and nothing happens"
+
+Open **Dashboard → Plugins → Donations**. The **Status** panel at the top says whether the
+popup is live and, if not, exactly what is missing. The two **Preview** buttons show you
+the popup and the donate page immediately, ignoring the rules below.
+
+The three usual causes:
+
+1. **No payment method is enabled.** The presets ship switched off, and the popup stays
+   hidden until at least one is enabled (or an external donate URL is set) — it won't send
+   people to an empty page. Enable one under *Payment methods* and save.
+2. **You're an administrator.** *Also show the popup to administrators* is off by default,
+   since the admin is usually the person being donated to. Tick it while testing, or use
+   the Preview buttons.
+3. **The script isn't in the web client yet.** It's added at server startup, so restart
+   Jellyfin after installing, then **hard refresh** the browser (Ctrl+Shift+R). The Status
+   panel reports whether the script is installed and whether the file is writable.
+
+## Reaching the donate page
+
+Three ways in, independent of the popup:
+
+- the **Donate** entry in the sidebar menu (on by default)
+- the floating **Donate** button in the corner (on by default)
+- `JellyfinDonate.open()` from the console, or any element with a `data-jf-donate`
+  attribute / `<a href="#donate">`
+
+Both the menu entry and the floating button can be turned off under *Appearance*.
+
 ## Settings
 
 **Login popup** — enable/disable, title, message, both button labels, the *Don't remind me
@@ -97,9 +126,10 @@ Wise, bank transfer and Bitcoin. Each card has:
 A method needs a link **or** a handle to be shown. If no method is enabled, the popup
 stays hidden — the plugin won't nag people toward an empty page.
 
-**Appearance** — colour scheme (auto / dark / light), accent colour, an optional floating
-*Donate* button in the corner of the web client, and an *Allow HTML in messages* switch
-(off by default; messages render as plain text, blank lines become paragraphs).
+**Appearance** — colour scheme (auto / dark / light), accent colour, the sidebar *Donate*
+entry and the floating *Donate* button (both on by default), the label used for them, and
+an *Allow HTML in messages* switch (off by default; messages render as plain text, blank
+lines become paragraphs).
 
 **User reminders** — shows how many users opted out or marked themselves as donors, with a
 button to reset all of it.
@@ -113,6 +143,7 @@ button to reset all of it.
 | `POST /Donate/Prompted` | user | Records that the popup was shown |
 | `POST /Donate/OptOut` | user | `{"OptOut": true}` — don't remind me again |
 | `POST /Donate/Donated` | user | Marks the user as having donated |
+| `GET /Donate/Status` | admin | Diagnostics behind the Status panel |
 
 From the browser console, `JellyfinDonate.open()` opens the donate page any time, and
 anything with a `data-jf-donate` attribute (or `<a href="#donate">`) does the same when

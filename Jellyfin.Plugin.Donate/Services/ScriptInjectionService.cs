@@ -138,4 +138,50 @@ public sealed class ScriptInjectionService : IHostedService
 
         return stripped.Insert(bodyEnd, tag);
     }
+
+    /// <summary>
+    /// Reports whether the client script is actually present in the web client, so the
+    /// admin page can say why nothing is showing up instead of leaving people guessing.
+    /// </summary>
+    internal static InjectionStatus DescribeInjection(string webPath)
+    {
+        var status = new InjectionStatus { IndexPath = Path.Combine(webPath ?? string.Empty, "index.html") };
+
+        try
+        {
+            status.IndexExists = File.Exists(status.IndexPath);
+            if (!status.IndexExists)
+            {
+                return status;
+            }
+
+            status.ScriptPresent = _existingTag.IsMatch(File.ReadAllText(status.IndexPath));
+
+            // Probe writability the same way Apply() would discover it.
+            using var probe = new FileStream(status.IndexPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            status.Writable = true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            status.Writable = false;
+        }
+        catch (IOException)
+        {
+            status.Writable = false;
+        }
+
+        return status;
+    }
+
+    /// <summary>Result of <see cref="DescribeInjection"/>.</summary>
+    internal sealed class InjectionStatus
+    {
+        public string IndexPath { get; set; } = string.Empty;
+
+        public bool IndexExists { get; set; }
+
+        public bool ScriptPresent { get; set; }
+
+        public bool Writable { get; set; }
+    }
 }

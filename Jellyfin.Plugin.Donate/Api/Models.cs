@@ -42,6 +42,8 @@ public class DonateClientConfig
 
     public bool ShowPersistentButton { get; set; }
 
+    public bool ShowMenuItem { get; set; }
+
     public string PersistentButtonText { get; set; } = string.Empty;
 
     public string Appearance { get; set; } = "auto";
@@ -88,4 +90,27 @@ public class DonateAck
     public bool OptedOut { get; set; }
 
     public bool HasDonated { get; set; }
+}
+
+/// <summary>Diagnostics for the admin page: is this thing actually working?</summary>
+public class DonateStatus
+{
+    /// <summary>True when everything is set up and at least some users will see the popup.</summary>
+    public bool PopupWillShow { get; set; }
+
+    /// <summary>Plain-English reasons the popup is not showing, in the order worth fixing.</summary>
+    public IReadOnlyList<string> Problems { get; set; } = Array.Empty<string>();
+
+    public bool ScriptInstalled { get; set; }
+
+    public bool WebClientFound { get; set; }
+
+    public bool WebClientWritable { get; set; }
+
+    public string IndexPath { get; set; } = string.Empty;
+
+    public int EnabledMethodCount { get; set; }
+
+    /// <summary>True when the person viewing the admin page is excluded by the admin setting.</summary>
+    public bool ViewerExcludedAsAdmin { get; set; }
 }

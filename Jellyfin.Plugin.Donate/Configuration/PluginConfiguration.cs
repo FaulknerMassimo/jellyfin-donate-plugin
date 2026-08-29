@@ -73,9 +73,13 @@ public class PluginConfiguration : BasePluginConfiguration
 
     /// <summary>
     /// Show a small floating "Donate" button in the corner of the web client, so the
-    /// donate page stays reachable for people who dismissed the popup.
+    /// donate page stays reachable for people who dismissed the popup. On by default:
+    /// without it the donate page has no entry point of its own.
     /// </summary>
-    public bool ShowPersistentButton { get; set; }
+    public bool ShowPersistentButton { get; set; } = true;
+
+    /// <summary>Add a "Donate" entry to the web client's sidebar menu.</summary>
+    public bool ShowMenuItem { get; set; } = true;
 
     public string PersistentButtonText { get; set; } = "Donate";
 

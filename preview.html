@@ -14,6 +14,11 @@
              background:#1c1c21; color:#e8e8ec; font-size:.9rem; cursor:pointer; font-family:inherit; }
     button:hover { background:#26262d; }
     .fake { margin-top:36px; padding:24px; border:1px dashed #33363d; border-radius:12px; color:#6d7480; }
+    .mainDrawer { margin-top:28px; width:260px; border:1px solid #33363d; border-radius:12px; overflow:hidden; }
+    .navMenuOption { display:flex; align-items:center; gap:12px; padding:12px 18px;
+                     color:#c8ccd4; text-decoration:none; font-size:.92rem; }
+    .navMenuOption:hover { background:#1c1c21; }
+    .navMenuOptionIcon { opacity:.5; font-size:.8rem; }
 </style>
 </head>
 <body>
@@ -31,6 +36,16 @@
     </div>
 
     <div class="fake">This box stands in for the Jellyfin home screen.</div>
+
+    <!-- Stand-in for the real web client's navigation drawer, so the sidebar
+         "Donate" entry can be checked here too. -->
+    <div class="mainDrawer">
+        <div class="navMenuOptions">
+            <a class="navMenuOption" href="#"><span class="navMenuOptionIcon">&#9632;</span><span class="navMenuOptionText">Home</span></a>
+            <a class="navMenuOption" href="#"><span class="navMenuOptionIcon">&#9632;</span><span class="navMenuOptionText">Movies</span></a>
+            <a class="navMenuOption" href="#"><span class="navMenuOptionIcon">&#9632;</span><span class="navMenuOptionText">Shows</span></a>
+        </div>
+    </div>
 
 <script>
 // ---- a fake Jellyfin ApiClient, just enough for donate.js -------------------
@@ -51,8 +66,9 @@ var mockConfig = {
     ThankYouMessage: "Thank you so much! Your support genuinely keeps this server running. It means a lot that you took the time.",
     DonatedButtonText: "I've made a donation",
     ExternalDonatePageUrl: "",
-    ShowPersistentButton: false,
+    ShowPersistentButton: true,
     PersistentButtonText: "Donate",
+    ShowMenuItem: true,
     Appearance: "dark",
     AccentColor: "#00a4dc",
     AllowHtml: false,

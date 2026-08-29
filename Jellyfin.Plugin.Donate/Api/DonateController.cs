@@ -1,10 +1,11 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Security.Claims;
-using Jellyfin.Plugin.Donate.Configuration;
 using Jellyfin.Plugin.Donate.Services;
+using MediaBrowser.Controller;
 using MediaBrowser.Controller.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,11 +23,16 @@ public class DonateController : ControllerBase
     private const string JellyfinUserIdClaim = "Jellyfin-UserId";
 
     private readonly IUserManager _userManager;
+    private readonly IServerApplicationPaths _paths;
     private readonly ILogger<DonateController> _logger;
 
-    public DonateController(IUserManager userManager, ILogger<DonateController> logger)
+    public DonateController(
+        IUserManager userManager,
+        IServerApplicationPaths paths,
+        ILogger<DonateController> logger)
     {
         _userManager = userManager;
+        _paths = paths;
         _logger = logger;
     }
 
@@ -103,6 +109,7 @@ public class DonateController : ControllerBase
             DonatedButtonText = config.DonatedButtonText,
             ExternalDonatePageUrl = config.ExternalDonatePageUrl,
             ShowPersistentButton = config.ShowPersistentButton,
+            ShowMenuItem = config.ShowMenuItem,
             PersistentButtonText = config.PersistentButtonText,
             Appearance = config.Appearance,
             AccentColor = config.AccentColor,
@@ -155,6 +162,82 @@ public class DonateController : ControllerBase
 
         DonationStore.Update(userId, s => s.DonatedUtc = DateTime.UtcNow);
         return new DonateAck { HasDonated = true };
+    }
+
+    /// <summary>
+    /// Why is nothing showing up? Answers that without needing the server logs.
+    /// </summary>
+    [HttpGet("Status")]
+    [Authorize(Policy = "RequiresElevation")]
+    public ActionResult<DonateStatus> GetStatus()
+    {
+        var config = Plugin.Instance?.Configuration;
+        if (config is null)
+        {
+            return new DonateStatus { Problems = ["The plugin is not loaded. Restart Jellyfin."] };
+        }
+
+        var injection = ScriptInjectionService.DescribeInjection(_paths.WebPath);
+        var enabledMethods = config.Methods.Count(m => m.Enabled && !string.IsNullOrWhiteSpace(m.Name));
+        var hasTarget = enabledMethods > 0 || !string.IsNullOrWhiteSpace(config.ExternalDonatePageUrl);
+        var problems = new List<string>();
+
+        if (!config.Enabled)
+        {
+            problems.Add("The plugin is disabled - tick \"Enable the donation plugin\" at the top of this page.");
+        }
+
+        if (!injection.IndexExists)
+        {
+            problems.Add(
+                "The web client was not found at " + injection.IndexPath
+                + ". If Jellyfin serves its web client from somewhere else (Docker, a reverse proxy), add the "
+                + "script tag to that index.html yourself and turn off automatic injection.");
+        }
+        else if (!injection.ScriptPresent)
+        {
+            problems.Add(config.AutoInjectClientScript
+                ? "The popup script is not in index.html yet"
+                    + (injection.Writable
+                        ? ". Restart Jellyfin - the script is added at startup."
+                        : ", and the file is not writable by Jellyfin. Fix the permissions on "
+                          + injection.IndexPath + " or add the script tag manually.")
+                : "Automatic script injection is turned off and the script is not in index.html, so nothing "
+                    + "will appear in the browser.");
+        }
+
+        if (!hasTarget)
+        {
+            problems.Add(
+                "No payment methods are enabled, so the popup stays hidden. Add one under \"Payment methods\" "
+                + "below and tick \"Show this method to users\".");
+        }
+
+        if (!config.ShowPopup)
+        {
+            problems.Add("\"Show the popup after users log in\" is turned off.");
+        }
+
+        var viewerExcluded = !config.ShowToAdministrators;
+        if (viewerExcluded)
+        {
+            problems.Add(
+                "You are an administrator and \"Also show the popup to administrators\" is off, so you will not "
+                + "see the popup yourself even when everything else is set up. Use the Preview buttons above to "
+                + "check it, or tick that option while testing.");
+        }
+
+        return new DonateStatus
+        {
+            PopupWillShow = config.Enabled && config.ShowPopup && hasTarget && injection.ScriptPresent,
+            Problems = problems,
+            ScriptInstalled = injection.ScriptPresent,
+            WebClientFound = injection.IndexExists,
+            WebClientWritable = injection.Writable,
+            IndexPath = injection.IndexPath,
+            EnabledMethodCount = enabledMethods,
+            ViewerExcludedAsAdmin = viewerExcluded
+        };
     }
 
     /// <summary>
